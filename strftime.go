@@ -12,7 +12,7 @@ import (
 	"unicode/utf8"
 )
 
-// Strftime is compatible with Ruby's Time.strftime.
+// Strftime is compatible with Ruby's Time.strftime https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime.
 func Strftime(format string, t time.Time) (string, error) {
 	return re.ReplaceAllStringFunc(format, func(directive string) string {
 		var (

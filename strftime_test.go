@@ -48,6 +48,7 @@ var conversionTests = []struct{ format, expect string }{
 
 	// making a field smaller works
 	{"%1H", "15"},
+
 	{"%:z", "-05:00"},
 	{"%::z", "-05:00:00"},
 
@@ -59,7 +60,7 @@ var conversionTests = []struct{ format, expect string }{
 
 	// Date.strftime uses these, but the test table is generated from Time
 	{"%Q", "1136232245123456"},
-	// {"%_Q", "1136232245123456"},
+	{"%_Q", "1136232245123456"},
 
 	// Ruby doesn't behave as documented, so use these instead
 	{"%v", " 2-Jan-2006"},
@@ -196,4 +197,14 @@ func TestStrftime_zones(t *testing.T) {
 		require.NoErrorf(t, err, test.source)
 		require.Equalf(t, test.expect, actual, test.source)
 	}
+}
+
+func ExampleStrftime() {
+	t, _ := time.Parse(time.RFC822, "10 Jul 17 18:45 EDT")
+	s, _ := Strftime("%B %^B %m %_m %-m %6Y", t)
+	z, _ := Strftime("%Z %z %:z %::z", t)
+	fmt.Println(s)
+	fmt.Println(z)
+	// Output: July JULY 07  7 7 002017
+	// EDT -0400 -04:00 -04:00:00
 }

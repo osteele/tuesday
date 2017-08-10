@@ -9,6 +9,8 @@
 
 `rbstrftime` provides a function `Strftime` that is compatible with Ruby's `Time.strftime`.
 
+It implements the padding and case change flags e.g. `%-m`, `%_m`, `%0e`, `%03e`, and `%^A`; and Ruby-specific(?) conversions such as `%s`, `%Q`, `%N`, and `%9N`.
+
 It was developed for use with in [Liquid](https://github.com/osteele/liquid) and [Gojekyll](https://github.com/osteele/gojekyll).
 
 ## Install
@@ -16,6 +18,12 @@ It was developed for use with in [Liquid](https://github.com/osteele/liquid) and
 `go get gopkg.in/osteele/rbstrftime.v1` # latest snapshot
 
 `go get -u github.com/osteele/rbstrftime` # development version
+
+## References
+
+* [Ruby Date.strftime](https://ruby-doc.org/stdlib-2.4.1/libdoc/date/rdoc/Date.html#method-i-strftime)
+* [Ruby DateTime.strftime](https://ruby-doc.org/stdlib-2.4.1/libdoc/date/rdoc/DateTime.html#method-i-strftime)
+* [Ruby Time.strftime](https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime)
 
 ## License
 
