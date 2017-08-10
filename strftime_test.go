@@ -19,16 +19,52 @@ func timeMustParse(f, s string) time.Time {
 }
 
 var conversionTests = []struct{ format, expect string }{
+	// prefix and suffix
+	{"pre%m", "pre01"},
+	{"%mpost", "01post"},
+	{"⌘%m⌘", "⌘01⌘"},
+
+	// gen.rb doesn't generate these
 	{"%1N", "1"},
 	{"%3N", "123"},
 	{"%6N", "123456"},
 	{"%9N", "123456789"},
 	{"%12N", "123456789000"},
-	{"%v", " 2-Jan-2006"},
-	{"%Z", "EST"},
+
+	// flags and width override zero-padded conversion
+	{"%1m", "1"},
+	{"%2m", "01"},
+	{"%3m", "001"},
+	// {"%-2m", "1"},
+	{"%_2m", " 1"},
+	// {"%#2m", "1"},
+	// {"%02m", "1"},
+
+	// flags and width override blank-padded conversion
+	{"%2e", " 2"},
+	// {"%-2e", "2"},
+	{"%_2e", " 2"},
+	{"%02e", "02"},
+
 	{"%:z", "-05:00"},
 	{"%::z", "-05:00:00"},
+
 	{"%%", "%"},
+
+	// other runes are passed through
+	{"%&", "%&"},
+	{"%⌘", "%⌘"},
+
+	// Date.strftime uses these, but the test table is generated from Time
+	{"%f", "123456"},
+	// {"%_f", "123456"},
+
+	{"%Q", "1136232245123456"},
+	// {"%_Q", "1136232245123456"},
+
+	// Ruby doesn't behave as documented, so use these instead
+	{"%v", " 2-Jan-2006"},
+	{"%Z", "EST"},
 }
 
 var dayOfWeekTests = []string{

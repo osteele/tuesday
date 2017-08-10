@@ -14,16 +14,16 @@ import (
 func Strftime(format string, t time.Time) (string, error) {
 	return re.ReplaceAllStringFunc(format, func(directive string) string {
 		var (
+			pad, w        = '0', 2
 			m             = re.FindAllStringSubmatch(directive, 1)[0]
 			flags, width  = m[1], m[2]
 			conversion, _ = utf8.DecodeRuneInString(m[3])
 			c             = convert(t, conversion, flags, width)
-			pad, w        = '0', 2
 		)
 		if s, ok := c.(string); ok {
 			return applyFlags(flags, s)
 		}
-		if f, ok := padding[conversion]; ok {
+		if f, ok := defaultPadding[conversion]; ok {
 			pad, w = f.c, f.w
 		}
 		switch flags {
@@ -37,9 +37,18 @@ func Strftime(format string, t time.Time) (string, error) {
 		if len(width) > 0 {
 			w, _ = strconv.Atoi(width) // nolint: gas
 		}
-		fm := fmt.Sprintf("%%%c%dd", pad, w)
-		if pad == '-' {
+		var fm string
+		switch {
+		case pad == '-' && w == 2:
+			fm = "%2d"
+		case pad == '0' && w == 2:
+			fm = "%02d"
+		case pad == '0' && w == 3:
+			fm = "%03d"
+		case pad == '-':
 			fm = fmt.Sprintf("%%%dd", w)
+		default:
+			fm = fmt.Sprintf("%%%c%dd", pad, w)
 		}
 		s := fmt.Sprintf(fm, c)
 		return applyFlags(flags, s)
@@ -52,7 +61,7 @@ var isUpperRE = regexp.MustCompile(`^[A-Z]+$`)
 var amPmTable = map[bool]string{true: "AM", false: "PM"}
 var amPmLowerTable = map[bool]string{true: "am", false: "pm"}
 
-var padding = map[rune]struct {
+var defaultPadding = map[rune]struct {
 	c rune
 	w int
 }{
