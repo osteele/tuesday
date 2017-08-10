@@ -21,28 +21,28 @@ func Strftime(format string, t time.Time) (string, error) {
 			c             = replaceComponent(t, conversion, flags, width)
 			pad, w        = '0', 2
 		)
-		if s, ok := c.(string); ok {
-			return s
+		s, ok := c.(string)
+		if !ok {
+			if f, ok := padding[conversion]; ok {
+				pad, w = f.c, f.w
+			}
+			switch flags {
+			case "-":
+				w = 0
+			case "_":
+				pad = ' '
+			case "0":
+				pad = '0'
+			}
+			if len(width) > 0 {
+				w, _ = strconv.Atoi(width) // nolint: gas
+			}
+			fm := fmt.Sprintf("%%%c%dd", pad, w)
+			if pad == '-' {
+				fm = fmt.Sprintf("%%%dd", w)
+			}
+			s = fmt.Sprintf(fm, c)
 		}
-		if f, ok := padding[conversion]; ok {
-			pad, w = f.c, f.w
-		}
-		switch flags {
-		case "-":
-			w = 0
-		case "_":
-			pad = ' '
-		case "0":
-			pad = '0'
-		}
-		if len(width) > 0 {
-			w, _ = strconv.Atoi(width) // nolint: gas
-		}
-		fm := fmt.Sprintf("%%%c%dd", pad, w)
-		if pad == '-' {
-			fm = fmt.Sprintf("%%%dd", w)
-		}
-		s := fmt.Sprintf(fm, c)
 		switch flags {
 		case "^":
 			return strings.ToUpper(s)
@@ -53,7 +53,7 @@ func Strftime(format string, t time.Time) (string, error) {
 	}), nil
 }
 
-var re = regexp.MustCompile(`%([-_0]|::?)?(\d+)?[EO]?([a-zA-Z\+nt%])`)
+var re = regexp.MustCompile(`%([-_^0]|::?)?(\d+)?[EO]?([a-zA-Z\+nt%])`)
 
 var amPmTable = map[bool]string{true: "AM", false: "PM"}
 var amPmLowerTable = map[bool]string{true: "am", false: "pm"}
