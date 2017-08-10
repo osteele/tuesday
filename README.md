@@ -37,4 +37,4 @@ MIT License
 [travis-svg]: https://img.shields.io/travis/osteele/rbstrftime.svg?branch=master
 
 [appveyor-url]: https://ci.appveyor.com/project/osteele/rbstrftime
-[appveyor-svg]: https://ci.appveyor.com/api/projects/status/76tnj36879n671jx?svg=true
+[appveyor-svg]: https://ci.appveyor.com/api/projects/status/a2wm7t54g1yj5fl8?svg=true
