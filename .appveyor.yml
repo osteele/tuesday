@@ -1,0 +1,20 @@
+version: 1.0.0.{build}
+
+clone_folder: C:\GOPATH\src\github.com\osteele\rbstrftime
+
+environment:
+  GOPATH: C:\GOPATH
+  GOVERSION: 1.8
+
+init:
+  - set PATH=C:\go\bin;%GOPATH%;%PATH%
+  - go version
+  - go env
+
+install:
+  - go get -t ./...
+
+build_script:
+  - go test ./...
+
+platform: x64
