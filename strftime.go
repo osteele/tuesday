@@ -15,45 +15,39 @@ func Strftime(format string, t time.Time) (string, error) {
 	return re.ReplaceAllStringFunc(format, func(directive string) string {
 		var (
 			m             = re.FindAllStringSubmatch(directive, 1)[0]
-			flags         = m[1]
-			width         = m[2]
+			flags, width  = m[1], m[2]
 			conversion, _ = utf8.DecodeRuneInString(m[3])
-			c             = replaceComponent(t, conversion, flags, width)
+			c             = convert(t, conversion, flags, width)
 			pad, w        = '0', 2
 		)
-		s, ok := c.(string)
-		if !ok {
-			if f, ok := padding[conversion]; ok {
-				pad, w = f.c, f.w
-			}
-			switch flags {
-			case "-":
-				w = 0
-			case "_":
-				pad = ' '
-			case "0":
-				pad = '0'
-			}
-			if len(width) > 0 {
-				w, _ = strconv.Atoi(width) // nolint: gas
-			}
-			fm := fmt.Sprintf("%%%c%dd", pad, w)
-			if pad == '-' {
-				fm = fmt.Sprintf("%%%dd", w)
-			}
-			s = fmt.Sprintf(fm, c)
+		if s, ok := c.(string); ok {
+			return applyFlags(flags, s)
+		}
+		if f, ok := padding[conversion]; ok {
+			pad, w = f.c, f.w
 		}
 		switch flags {
-		case "^":
-			return strings.ToUpper(s)
-		// case "#":
-		default:
-			return s
+		case "-":
+			w = 0
+		case "_":
+			pad = ' '
+		case "0":
+			pad = '0'
 		}
+		if len(width) > 0 {
+			w, _ = strconv.Atoi(width) // nolint: gas
+		}
+		fm := fmt.Sprintf("%%%c%dd", pad, w)
+		if pad == '-' {
+			fm = fmt.Sprintf("%%%dd", w)
+		}
+		s := fmt.Sprintf(fm, c)
+		return applyFlags(flags, s)
 	}), nil
 }
 
-var re = regexp.MustCompile(`%([-_^0]|::?)?(\d+)?[EO]?([a-zA-Z\+nt%])`)
+var re = regexp.MustCompile(`%([-_^#0]|::?)?(\d+)?[EO]?([a-zA-Z\+nt%])`)
+var isUpperRE = regexp.MustCompile(`^[A-Z]+$`)
 
 var amPmTable = map[bool]string{true: "AM", false: "PM"}
 var amPmLowerTable = map[bool]string{true: "am", false: "pm"}
@@ -74,7 +68,21 @@ var padding = map[rune]struct {
 	'Y': {'0', 4},
 }
 
-func replaceComponent(t time.Time, c rune, flags, width string) interface{} { // nolint: gocyclo
+func applyFlags(flags, s string) string {
+	switch flags {
+	case "^":
+		return strings.ToUpper(s)
+	case "#":
+		if isUpperRE.MatchString(s) {
+			return strings.ToLower(s)
+		}
+		return strings.ToUpper(s)
+	default:
+		return s
+	}
+}
+
+func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: gocyclo
 	switch c {
 
 	// Date
