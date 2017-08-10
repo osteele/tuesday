@@ -1,8 +1,5 @@
 # Create a file data.csv in the current directory, containing format strings,
 # and the reference date thus formatted.
-#
-# This is run manually rather than on go generate, so that go generate doesn't
-# require a Ruby installation.
 
 require 'CSV'
 require 'time'

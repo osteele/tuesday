@@ -8,6 +8,9 @@ setup:
 	go get github.com/alecthomas/gometalinter
 	gometalinter --install
 
+generate:
+	go generate ./...
+
 lint:
 	gometalinter ./... --tests --deadline=5m --include=gofmt
 	@echo lint passed

@@ -1,6 +1,8 @@
 // Package strftime implements a Strftime function that is compatible with Ruby's Time.strftime.
 package strftime
 
+//go:generate ruby testdata/gen.rb
+
 import (
 	"fmt"
 	"regexp"
