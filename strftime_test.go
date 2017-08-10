@@ -56,9 +56,6 @@ var conversionTests = []struct{ format, expect string }{
 	{"%⌘", "%⌘"},
 
 	// Date.strftime uses these, but the test table is generated from Time
-	{"%f", "123456"},
-	// {"%_f", "123456"},
-
 	{"%Q", "1136232245123456"},
 	// {"%_Q", "1136232245123456"},
 
