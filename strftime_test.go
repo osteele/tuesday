@@ -61,6 +61,7 @@ var conversionTests = []struct{ format, expect string }{
 	// Date.strftime uses these, but the test table is generated from Time
 	{"%Q", "1136232245123456"},
 	{"%_Q", "1136232245123456"},
+	{"%+", "Mon Jan  2 15:04:05 EST 2006"},
 
 	// Ruby doesn't behave as documented, so use these instead
 	{"%v", " 2-Jan-2006"},
