@@ -5,7 +5,7 @@ require 'CSV'
 require 'time'
 
 rt = Time.iso8601 "2006-01-02T15:04:05.123456789-05:00"
-CSV.open(File.join(File.dirname(__FILE__), "data.csv"), "w") do |csv|
+CSV.open(File.join(File.dirname(__FILE__), "tests.csv"), "w") do |csv|
     for flag in ['', '-', '_', '^', '#', '0'] do
         for c in ('A'..'Z').to_a + ('a'..'z').to_a + %w[+ %] do
             fmt = "%#{flag}#{c}"

@@ -3,6 +3,7 @@ package strftime
 import (
 	"encoding/csv"
 	"fmt"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -88,6 +89,38 @@ var hourTests = []struct {
 	{23, "%H=23 %k=23 %I=11 %l=11 %P=pm %p=PM"},
 }
 
+func readTestRows() ([][]string, map[string]bool) {
+	skip := map[string]bool{}
+	f, err := os.Open("testdata/skip.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close() // nolint: errcheck
+
+	r := csv.NewReader(f)
+	rows, err := r.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, row := range rows {
+		skip[row[0]] = true
+	}
+
+	f, err = os.Open("testdata/tests.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close() // nolint: errcheck
+
+	r = csv.NewReader(f)
+	rows, err = r.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return rows, skip
+}
+
 func TestStrftime(t *testing.T) {
 	require.NoError(t, os.Setenv("TZ", "America/New_York"))
 
@@ -99,23 +132,7 @@ func TestStrftime(t *testing.T) {
 		require.Equalf(t, test.expect, actual, name)
 	}
 
-	skip := map[string]bool{}
-	f, err := os.Open("testdata/skip.csv")
-	require.NoError(t, err)
-	defer f.Close() // nolint: errcheck
-	r := csv.NewReader(f)
-	rows, err := r.ReadAll()
-	require.NoError(t, err)
-	for _, row := range rows {
-		skip[row[0]] = true
-	}
-
-	f, err = os.Open("testdata/data.csv")
-	require.NoError(t, err)
-	defer f.Close() // nolint: errcheck
-	r = csv.NewReader(f)
-	rows, err = r.ReadAll()
-	require.NoError(t, err)
+	rows, skip := readTestRows()
 	for _, row := range rows {
 		format, expect := row[0], row[1]
 		if skip[format] {
