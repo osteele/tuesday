@@ -199,12 +199,16 @@ func TestStrftime_zones(t *testing.T) {
 	}
 }
 
-func ExampleStrftime() {
+func ExampleStrftime_flags() {
 	t, _ := time.Parse(time.RFC822, "10 Jul 17 18:45 EDT")
 	s, _ := Strftime("%B %^B %m %_m %-m %6Y", t)
-	z, _ := Strftime("%Z %z %:z %::z", t)
 	fmt.Println(s)
-	fmt.Println(z)
 	// Output: July JULY 07  7 7 002017
-	// EDT -0400 -04:00 -04:00:00
+}
+
+func ExampleStrftime_time_zones() {
+	t, _ := time.Parse(time.RFC822, "10 Jul 17 18:45 EDT")
+	s, _ := Strftime("%Z %z %:z %::z", t)
+	fmt.Println(s)
+	// Output: EDT -0400 -04:00 -04:00:00
 }
