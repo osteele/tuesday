@@ -46,6 +46,8 @@ var conversionTests = []struct{ format, expect string }{
 	{"%_2e", " 2"},
 	{"%02e", "02"},
 
+	// making a field smaller works
+	{"%1H", "15"},
 	{"%:z", "-05:00"},
 	{"%::z", "-05:00:00"},
 

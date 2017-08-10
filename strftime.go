@@ -35,7 +35,7 @@ func Strftime(format string, t time.Time) (string, error) {
 		case "-":
 			w = 0
 		case "_":
-			pad = ' '
+			pad = '-'
 		case "0":
 			pad = '0'
 		}
