@@ -28,6 +28,9 @@ func Strftime(format string, t time.Time) (string, error) {
 		if f, ok := defaultPadding[conversion]; ok {
 			pad, w = f.c, f.w
 		}
+		if len(width) > 0 {
+			w, _ = strconv.Atoi(width) // nolint: gas
+		}
 		switch flags {
 		case "-":
 			w = 0
@@ -35,9 +38,6 @@ func Strftime(format string, t time.Time) (string, error) {
 			pad = ' '
 		case "0":
 			pad = '0'
-		}
-		if len(width) > 0 {
-			w, _ = strconv.Atoi(width) // nolint: gas
 		}
 		var fm string
 		switch {

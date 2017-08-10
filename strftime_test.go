@@ -36,14 +36,13 @@ var conversionTests = []struct{ format, expect string }{
 	{"%1m", "1"},
 	{"%2m", "01"},
 	{"%3m", "001"},
-	// {"%-2m", "1"},
+	{"%-2m", "1"},
 	{"%_2m", " 1"},
-	// {"%#2m", "1"},
-	// {"%02m", "1"},
+	{"%02m", "01"},
 
 	// flags and width override blank-padded conversion
 	{"%2e", " 2"},
-	// {"%-2e", "2"},
+	{"%-2e", "2"},
 	{"%_2e", " 2"},
 	{"%02e", "02"},
 
