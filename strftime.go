@@ -1,4 +1,4 @@
-// Package Tuesday implements a Strftime function that is compatible with Ruby's Time.strftime.
+// Package tuesday implements a Strftime function that is compatible with Ruby's Time.strftime.
 package tuesday
 
 //go:generate ruby testdata/gen.rb
@@ -15,6 +15,9 @@ import (
 // Strftime is compatible with Ruby's Time.strftime.
 //
 // See https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime
+//
+// Strftime returns an error for compatibility with other formatting functions and for future compatibility,
+// but in the current implementation this error is always nil.
 func Strftime(format string, t time.Time) (string, error) {
 	return re.ReplaceAllStringFunc(format, func(directive string) string {
 		var (
@@ -43,6 +46,7 @@ func Strftime(format string, t time.Time) (string, error) {
 		}
 		var fm string
 		switch {
+		// Hardcode the defaults:
 		case pad == '-' && w == 2:
 			fm = "%2d"
 		case pad == '0' && w == 2:
@@ -60,11 +64,16 @@ func Strftime(format string, t time.Time) (string, error) {
 }
 
 var re = regexp.MustCompile(`%([-_^#0]|::?)?(\d+)?[EO]?([a-zA-Z\+nt%])`)
-var isUpperRE = regexp.MustCompile(`^[A-Z]+$`)
+
+// Test whether a string is uppercase, for purpose of applying the # case reversal flag.
+// This is ASCII-only and is foiled by spaces and punctuation, but is sufficient for this context.
+var isUpperRE = regexp.MustCompile(`^[[:upper:]]+$`).MatchString
 
 var amPmTable = map[bool]string{true: "AM", false: "PM"}
 var amPmLowerTable = map[bool]string{true: "am", false: "pm"}
 
+// Default padding character and width, by conversion rune.
+// The default default is pad='0', width=2
 var defaultPadding = map[rune]struct {
 	c rune
 	w int
@@ -86,7 +95,7 @@ func applyFlags(flags, s string) string {
 	case "^":
 		return strings.ToUpper(s)
 	case "#":
-		if isUpperRE.MatchString(s) {
+		if isUpperRE(s) {
 			return strings.ToLower(s)
 		}
 		return strings.ToUpper(s)
@@ -246,12 +255,9 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 		return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 	case '+':
 		// date(1) (%a %b %e %H:%M:%S %Z %Y)
-		s, err := Strftime("%a %b %e %H:%M:%S %Z %Y", t)
-		if err != nil {
-			panic(err)
-		}
+		s, _ := Strftime("%a %b %e %H:%M:%S %Z %Y", t) // nolint: gas
 		return s
 	default:
-		return fmt.Sprintf("%%%c", c)
+		return string([]rune{'%', c})
 	}
 }

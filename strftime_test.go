@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -24,6 +25,7 @@ var conversionTests = []struct{ format, expect string }{
 	{"pre%m", "pre01"},
 	{"%mpost", "01post"},
 	{"⌘%m⌘", "⌘01⌘"},
+	{"", ""},
 
 	// gen.rb doesn't generate these
 	{"%1N", "1"},
@@ -68,6 +70,17 @@ var conversionTests = []struct{ format, expect string }{
 	{"%Z", "EST"},
 }
 
+var hourTests = []struct {
+	hour  int
+	tests string
+}{
+	{0, "%H=00 %k= 0 %I=12 %l=12 %P=am %p=AM"},
+	{1, "%H=01 %k= 1 %I=01 %l= 1 %P=am %p=AM"},
+	{12, "%H=12 %k=12 %I=12 %l=12 %P=pm %p=PM"},
+	{13, "%H=13 %k=13 %I=01 %l= 1 %P=pm %p=PM"},
+	{23, "%H=23 %k=23 %I=11 %l=11 %P=pm %p=PM"},
+}
+
 var dayOfWeekTests = []string{
 	"%A=Sunday %a=Sun %u=7 %w=0 %d=01 %e= 1 %j=001 %U=01 %V=52 %W=00",
 	"%A=Monday %a=Mon %u=1 %w=1 %d=02 %e= 2 %j=002 %U=01 %V=01 %W=01",
@@ -76,17 +89,6 @@ var dayOfWeekTests = []string{
 	"%A=Thursday %a=Thu %u=4 %w=4 %d=05 %e= 5 %j=005 %U=01 %V=01 %W=01",
 	"%A=Friday %a=Fri %u=5 %w=5 %d=06 %e= 6 %j=006 %U=01 %V=01 %W=01",
 	"%A=Saturday %a=Sat %u=6 %w=6 %d=07 %e= 7 %j=007 %U=01 %V=01 %W=01",
-}
-
-var hourTests = []struct {
-	hour   int
-	expect string
-}{
-	{0, "%H=00 %k= 0 %I=12 %l=12 %P=am %p=AM"},
-	{1, "%H=01 %k= 1 %I=01 %l= 1 %P=am %p=AM"},
-	{12, "%H=12 %k=12 %I=12 %l=12 %P=pm %p=PM"},
-	{13, "%H=13 %k=13 %I=01 %l= 1 %P=pm %p=PM"},
-	{23, "%H=23 %k=23 %I=11 %l=11 %P=pm %p=PM"},
 }
 
 func readTestRows() ([][]string, map[string]bool) {
@@ -161,27 +163,33 @@ func TestStrftime(t *testing.T) {
 	}
 }
 
-func TestStrftime_dow(t *testing.T) {
+func TestStrftime_hours(t *testing.T) {
 	require.NoError(t, os.Setenv("TZ", "America/New_York"))
-	for day, expect := range dayOfWeekTests {
-		dt := time.Date(2006, 01, day+1, 15, 4, 5, 0, time.UTC)
-		format := "%%A=%A %%a=%a %%u=%u %%w=%w %%d=%d %%e=%e %%j=%j %%U=%U %%V=%V %%W=%W"
-		name := fmt.Sprintf("%s.Strftime", dt)
-		actual, err := Strftime(format, dt)
-		require.NoErrorf(t, err, name)
-		require.Equalf(t, expect, actual, name)
+	for _, hour := range hourTests {
+		dt := time.Date(2006, 01, 2, hour.hour, 4, 5, 0, time.UTC)
+		for _, m := range regexp.MustCompile(`(\S+)=(\s*\S+)`).FindAllStringSubmatch(hour.tests, -1) {
+			format, expect := m[1], m[2]
+			t.Run(fmt.Sprintf("hour(%v).Strftime(%q)", hour.hour, format), func(t *testing.T) {
+				actual, err := Strftime(format, dt)
+				require.NoError(t, err)
+				require.Equal(t, expect, actual)
+			})
+		}
 	}
 }
 
-func TestStrftime_hours(t *testing.T) {
+func TestStrftime_dow(t *testing.T) {
 	require.NoError(t, os.Setenv("TZ", "America/New_York"))
-	for _, test := range hourTests {
-		dt := time.Date(2006, 01, 2, test.hour, 4, 5, 0, time.UTC)
-		format := "%%H=%H %%k=%k %%I=%I %%l=%l %%P=%P %%p=%p"
-		name := fmt.Sprintf("%s.Strftime", dt)
-		actual, err := Strftime(format, dt)
-		require.NoErrorf(t, err, name)
-		require.Equalf(t, test.expect, actual, name)
+	for day, tests := range dayOfWeekTests {
+		dt := time.Date(2006, 01, day+1, 15, 4, 5, 0, time.UTC)
+		for _, m := range regexp.MustCompile(`(\S+)=(\s*\S+)`).FindAllStringSubmatch(tests, -1) {
+			format, expect := m[1], m[2]
+			t.Run(fmt.Sprintf("day(%v).Strftime(%q)", day, format), func(t *testing.T) {
+				actual, err := Strftime(format, dt)
+				require.NoError(t, err)
+				require.Equal(t, expect, actual)
+			})
+		}
 	}
 }
 
