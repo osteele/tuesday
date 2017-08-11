@@ -1,4 +1,4 @@
-# Ruby-Compatible Strftime for Go
+# Tuesday: Ruby-Compatible Strftime for Go
 
  [![][travis-svg]][travis-url]
  [![][appveyor-svg]][appveyor-url]
@@ -7,7 +7,7 @@
  [![][godoc-svg]][godoc-url]
  [![][license-svg]][license-url]
 
-`rbstrftime` provides a function `Strftime` that is compatible with Ruby's `Time.strftime`.
+This package provides a function `Strftime` that is compatible with Ruby's `Time.strftime`.
 
 It implements the padding and case change flags e.g. `%-m`, `%_m`, `%0e`, `%03e`, and `%^A`; and Ruby-specific(?) conversions such as `%s`, `%Q`, `%N`, and `%9N`.
 
@@ -15,9 +15,9 @@ It was developed for use with in [Liquid](https://github.com/osteele/liquid) and
 
 ## Install
 
-`go get gopkg.in/osteele/rbstrftime.v1` # latest snapshot
+`go get gopkg.in/osteele/tuesday.v1` # latest snapshot
 
-`go get -u github.com/osteele/rbstrftime` # development version
+`go get -u github.com/osteele/tuesday` # development version
 
 ## References
 
@@ -29,20 +29,20 @@ It was developed for use with in [Liquid](https://github.com/osteele/liquid) and
 
 MIT License
 
-[coveralls-url]: https://coveralls.io/r/osteele/rbstrftime?branch=master
-[coveralls-svg]: https://img.shields.io/coveralls/osteele/rbstrftime.svg?branch=master
+[coveralls-url]: https://coveralls.io/r/osteele/tuesday?branch=master
+[coveralls-svg]: https://img.shields.io/coveralls/osteele/tuesday.svg?branch=master
 
-[godoc-url]: https://godoc.org/github.com/osteele/rbstrftime
-[godoc-svg]: https://godoc.org/github.com/osteele/rbstrftime?status.svg
+[godoc-url]: https://godoc.org/github.com/osteele/tuesday
+[godoc-svg]: https://godoc.org/github.com/osteele/tuesday?status.svg
 
-[license-url]: https://github.com/osteele/rbstrftime/blob/master/LICENSE
+[license-url]: https://github.com/osteele/tuesday/blob/master/LICENSE
 [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
 
-[go-report-card-url]: https://goreportcard.com/report/github.com/osteele/rbstrftime
-[go-report-card-svg]: https://goreportcard.com/badge/github.com/osteele/rbstrftime
+[go-report-card-url]: https://goreportcard.com/report/github.com/osteele/tuesday
+[go-report-card-svg]: https://goreportcard.com/badge/github.com/osteele/tuesday
 
-[travis-url]: https://travis-ci.org/osteele/rbstrftime
-[travis-svg]: https://img.shields.io/travis/osteele/rbstrftime.svg?branch=master
+[travis-url]: https://travis-ci.org/osteele/tuesday
+[travis-svg]: https://img.shields.io/travis/osteele/tuesday.svg?branch=master
 
-[appveyor-url]: https://ci.appveyor.com/project/osteele/rbstrftime
-[appveyor-svg]: https://ci.appveyor.com/api/projects/status/a2wm7t54g1yj5fl8?svg=true
+[appveyor-url]: https://ci.appveyor.com/project/osteele/tuesday
+[appveyor-svg]: https://ci.appveyor.com/api/projects/status/g033085erbusxbmy?svg=true

@@ -1,4 +1,4 @@
-package strftime
+package tuesday
 
 import (
 	"encoding/csv"
@@ -207,7 +207,7 @@ func ExampleStrftime_flags() {
 	// Output: July JULY 07  7 7 002017
 }
 
-	func ExampleStrftime_timezone() {
+func ExampleStrftime_timezone() {
 	t, _ := time.Parse(time.RFC822, "10 Jul 17 18:45 EDT")
 	s, _ := Strftime("%Z %z %:z %::z", t)
 	fmt.Println(s)

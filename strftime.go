@@ -1,5 +1,5 @@
-// Package strftime implements a Strftime function that is compatible with Ruby's Time.strftime.
-package strftime
+// Package Tuesday implements a Strftime function that is compatible with Ruby's Time.strftime.
+package tuesday
 
 //go:generate ruby testdata/gen.rb
 
@@ -12,7 +12,9 @@ import (
 	"unicode/utf8"
 )
 
-// Strftime is compatible with Ruby's Time.strftime https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime.
+// Strftime is compatible with Ruby's Time.strftime.
+//
+// See https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime
 func Strftime(format string, t time.Time) (string, error) {
 	return re.ReplaceAllStringFunc(format, func(directive string) string {
 		var (
