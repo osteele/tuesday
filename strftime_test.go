@@ -30,9 +30,11 @@ func timeMustParse(f, s string) time.Time {
 var conversionTests = []struct{ format, expect string }{
 	// prefix and suffix
 	{"pre%m", "pre01"},
-	{"%mpost", "01post"},
-	{"⌘%m⌘", "⌘01⌘"},
+	{"%m.post", "01.post"},
+	// empty
 	{"", ""},
+	// unicode
+	{"⌘%m⌘", "⌘01⌘"},
 
 	{"%1N", "1"},
 	{"%3N", "123"},
@@ -40,25 +42,40 @@ var conversionTests = []struct{ format, expect string }{
 	{"%9N", "123456789"},
 	{"%12N", "123456789000"},
 
-	// flags and width override zero-padded conversion
-	{"%1m", "1"},
-	{"%2m", "01"},
-	{"%3m", "001"},
-	{"%-2m", "1"},
-	{"%_2m", " 1"},
-	{"%02m", "01"},
-
-	// flags and width override blank-padded conversion
-	{"%2e", " 2"},
-	{"%-2e", "2"},
-	{"%_2e", " 2"},
-	{"%02e", "02"},
-
 	// width
 	{"%1H", "15"},
 	{"%2H", "15"},
 	{"%3H", "015"},
 
+	// flags, width override zero-padded conversion
+	{"%1m", "1"},
+	{"%2m", "01"},
+	{"%-2m", "1"},
+	{"%_2m", " 1"},
+	{"%02m", "01"},
+
+	{"%3m", "001"},
+	{"%-3m", "1"},
+	{"%_3m", "  1"},
+	{"%03m", "001"},
+
+	// flags, width override blank-padded conversion
+	{"%2e", " 2"},
+	{"%-2e", "2"},
+	{"%_2e", " 2"},
+	{"%02e", "02"},
+
+	{"%3e", "  2"},
+	{"%-3e", "2"},
+	{"%_3e", "  2"},
+	{"%03e", "002"},
+
+	{"%-3H", "15"},
+	{"%_3H", " 15"},
+	{"%03H", "015"},
+	{"%03e", "002"},
+
+	// time zone
 	{"%:z", "-05:00"},
 	{"%::z", "-05:00:00"},
 
@@ -97,11 +114,13 @@ var hourTests = []struct {
 }{
 	{0, "%H=00 %k= 0 %I=12 %l=12 %P=am %p=AM"},
 	{1, "%H=01 %k= 1 %I=01 %l= 1 %P=am %p=AM"},
+	{11, "%H=11 %k=11 %I=11 %l=11 %P=am %p=AM"},
 	{12, "%H=12 %k=12 %I=12 %l=12 %P=pm %p=PM"},
 	{13, "%H=13 %k=13 %I=01 %l= 1 %P=pm %p=PM"},
 	{23, "%H=23 %k=23 %I=11 %l=11 %P=pm %p=PM"},
 }
 
+// indexed by 0-based day of month
 var dayOfWeekTests = []string{
 	"%A=Sunday %a=Sun %u=7 %w=0 %d=01 %e= 1 %j=001 %U=01 %V=52 %W=00",
 	"%A=Monday %a=Mon %u=1 %w=1 %d=02 %e= 2 %j=002 %U=01 %V=01 %W=01",
