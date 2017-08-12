@@ -7,9 +7,14 @@
  [![][godoc-svg]][godoc-url]
  [![][license-svg]][license-url]
 
-This package provides a function `Strftime` that is compatible with Ruby's `Time.strftime`.
+This package provides a function `Strftime` that is compatible with Ruby's [`Time.strftime`](https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime).
 
-It implements the padding and case change flags e.g. `%-m`, `%_m`, `%0e`, `%03e`, and `%^A`; and Ruby-specific(?) conversions such as `%s`, `%Q`, `%N`, and `%9N`.
+It provides additional flags and conversions beyond C stdlib-like `strftime`s:
+
+* padding flags, *e.g.* `%-m`, `%_m`, `%0e`
+* case change flags, *e.g.* `%^A`, `%#b`
+* field widths: `%03e`, `%3N`, `%9N`
+* Ruby-specific conversions such as `%s`, `%N`, `%:z`, `%::z`
 
 It was developed for use with in [Liquid](https://github.com/osteele/liquid) and [Gojekyll](https://github.com/osteele/gojekyll).
 
