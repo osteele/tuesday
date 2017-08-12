@@ -8,6 +8,7 @@ environment:
 
 init:
   - set PATH=C:\go\bin;%GOPATH%;%PATH%
+  - tzutil /s "Eastern Standard Time"
   - go version
   - go env
 
