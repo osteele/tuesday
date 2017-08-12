@@ -181,7 +181,7 @@ func TestStrftime(t *testing.T) {
 
 func TestStrftime_hours(t *testing.T) {
 	for _, hour := range hourTests {
-		dt := time.Date(2006, 01, 2, hour.hour, 4, 5, 0, time.UTC)
+		dt := time.Date(2006, 1, 2, hour.hour, 4, 5, 0, time.UTC)
 		for _, m := range fieldRE.FindAllStringSubmatch(hour.tests, -1) {
 			format, expect := m[1], m[2]
 			t.Run(fmt.Sprintf("hour(%v).Strftime(%q)", hour.hour, format), func(t *testing.T) {
@@ -195,10 +195,34 @@ func TestStrftime_hours(t *testing.T) {
 
 func TestStrftime_dow(t *testing.T) {
 	for day, tests := range dayOfWeekTests {
-		dt := time.Date(2006, 01, day+1, 15, 4, 5, 0, time.UTC)
+		dt := time.Date(2006, 1, day+1, 15, 4, 5, 0, time.UTC)
 		for _, m := range fieldRE.FindAllStringSubmatch(tests, -1) {
 			format, expect := m[1], m[2]
 			t.Run(fmt.Sprintf("day(%v).Strftime(%q)", day, format), func(t *testing.T) {
+				actual, err := Strftime(format, dt)
+				require.NoError(t, err)
+				require.Equal(t, expect, actual)
+			})
+		}
+	}
+}
+
+var weekTests = map[int]string{
+	2017: "%a=Sun %G=2016 %g=16 %U=01 %V=52 %W=00",
+	2007: "%a=Mon %G=2007 %g=07 %U=00 %V=01 %W=01",
+	2013: "%a=Tue %G=2013 %g=13 %U=00 %V=01 %W=00",
+	2014: "%a=Wed %G=2014 %g=14 %U=00 %V=01 %W=00",
+	2015: "%a=Thu %G=2015 %g=15 %U=00 %V=01 %W=00",
+	2016: "%a=Fri %G=2015 %g=15 %U=00 %V=53 %W=00",
+	2011: "%a=Sat %G=2010 %g=10 %U=00 %V=52 %W=00",
+}
+
+func TestStrftime_weeks(t *testing.T) {
+	for year, tests := range weekTests {
+		dt := time.Date(year, 1, 1, 15, 4, 5, 0, time.UTC)
+		for _, m := range fieldRE.FindAllStringSubmatch(tests, -1) {
+			format, expect := m[1], m[2]
+			t.Run(fmt.Sprintf("%s.Strftime(%q)", dt.Weekday(), format), func(t *testing.T) {
 				actual, err := Strftime(format, dt)
 				require.NoError(t, err)
 				require.Equal(t, expect, actual)

@@ -184,7 +184,7 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 	case 'w':
 		return t.Weekday()
 
-	// ISO Year
+	// ISO week and year
 	case 'G':
 		y, _ := t.ISOWeek()
 		return y
@@ -195,20 +195,18 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 		_, wn := t.ISOWeek()
 		return wn
 
-	// ISO Week
+	// Ruby week
 	case 'U':
-		t = t.Add(24 * time.Hour)
-		y, wn := t.ISOWeek()
-		if y < t.Year() {
-			wn = 0
-		}
-		return wn
+		// day of year of first day of week (might be negative)
+		d := t.YearDay() - int(t.Weekday())
+		return (d + 6) / 7
 	case 'W':
-		y, wn := t.ISOWeek()
-		if y < t.Year() {
-			wn = 0
+		// day of year of first day of (Monday-based) week
+		d := t.YearDay() - int(t.Weekday()) + 1
+		if t.Weekday() == time.Sunday {
+			d -= 7
 		}
-		return wn
+		return (d + 6) / 7
 
 	// Epoch seconds
 	case 's':
