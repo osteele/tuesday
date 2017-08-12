@@ -45,4 +45,4 @@ MIT License
 [travis-svg]: https://img.shields.io/travis/osteele/tuesday.svg?branch=master
 
 [appveyor-url]: https://ci.appveyor.com/project/osteele/tuesday
-[appveyor-svg]: https://ci.appveyor.com/api/projects/status/g033085erbusxbmy?svg=true
+[appveyor-svg]: https://ci.appveyor.com/api/projects/status/y9cyh4e30yjxshtm?svg=true
