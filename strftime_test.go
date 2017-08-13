@@ -12,20 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func init() {
-	if err := os.Setenv("TZ", "America/New_York"); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func timeMustParse(f, s string) time.Time {
-	t, err := time.ParseInLocation(f, s, time.Local)
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
 // fills in the gaps from gen.rb
 var conversionTests = []struct{ format, expect string }{
 	// prefix and suffix
@@ -106,57 +92,6 @@ var conversionTests = []struct{ format, expect string }{
 	{"%a, %b %d, %Y %Z", "Mon, Jan 02, 2006 EST"},
 }
 
-var fieldRE = regexp.MustCompile(`(\S+)=(\s*\S+)`)
-
-var hourTests = []struct {
-	hour  int
-	tests string
-}{
-	{0, "%H=00 %k= 0 %I=12 %l=12 %P=am %p=AM"},
-	{1, "%H=01 %k= 1 %I=01 %l= 1 %P=am %p=AM"},
-	{11, "%H=11 %k=11 %I=11 %l=11 %P=am %p=AM"},
-	{12, "%H=12 %k=12 %I=12 %l=12 %P=pm %p=PM"},
-	{13, "%H=13 %k=13 %I=01 %l= 1 %P=pm %p=PM"},
-	{23, "%H=23 %k=23 %I=11 %l=11 %P=pm %p=PM"},
-}
-
-// indexed by 0-based day of month
-var dayOfWeekTests = []string{
-	"%A=Sunday %a=Sun %u=7 %w=0 %d=01 %e= 1 %j=001 %U=01 %V=52 %W=00",
-	"%A=Monday %a=Mon %u=1 %w=1 %d=02 %e= 2 %j=002 %U=01 %V=01 %W=01",
-	"%A=Tuesday %a=Tue %u=2 %w=2 %d=03 %e= 3 %j=003 %U=01 %V=01 %W=01",
-	"%A=Wednesday %a=Wed %u=3 %w=3 %d=04 %e= 4 %j=004 %U=01 %V=01 %W=01",
-	"%A=Thursday %a=Thu %u=4 %w=4 %d=05 %e= 5 %j=005 %U=01 %V=01 %W=01",
-	"%A=Friday %a=Fri %u=5 %w=5 %d=06 %e= 6 %j=006 %U=01 %V=01 %W=01",
-	"%A=Saturday %a=Sat %u=6 %w=6 %d=07 %e= 7 %j=007 %U=01 %V=01 %W=01",
-}
-
-func readConversionTests() ([][]string, error) {
-	skip := map[string]bool{"%_z": true}
-	for _, test := range conversionTests {
-		skip[test.format] = true
-	}
-
-	f, err := os.Open("testdata/tests.csv")
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close() // nolint: errcheck
-
-	r := csv.NewReader(f)
-	recs, err := r.ReadAll()
-	if err != nil {
-		return nil, err
-	}
-	tests := make([][]string, 0, len(recs))
-	for _, row := range recs {
-		if !skip[row[0]] {
-			tests = append(tests, row)
-		}
-	}
-	return tests, nil
-}
-
 func TestStrftime(t *testing.T) {
 	dt := timeMustParse(time.RFC3339Nano, "2006-01-02T15:04:05.123456789-05:00")
 	for _, test := range conversionTests {
@@ -180,54 +115,53 @@ func TestStrftime(t *testing.T) {
 }
 
 func TestStrftime_hours(t *testing.T) {
-	for _, hour := range hourTests {
-		dt := time.Date(2006, 1, 2, hour.hour, 4, 5, 0, time.UTC)
-		for _, m := range fieldRE.FindAllStringSubmatch(hour.tests, -1) {
-			format, expect := m[1], m[2]
-			t.Run(fmt.Sprintf("hour(%v).Strftime(%q)", hour.hour, format), func(t *testing.T) {
-				actual, err := Strftime(format, dt)
-				require.NoError(t, err)
-				require.Equal(t, expect, actual)
-			})
-		}
+	var hourTests = []struct {
+		hour       int
+		directives string
+	}{
+		{0, "%H=00 %k= 0 %I=12 %l=12 %P=am %p=AM"},
+		{1, "%H=01 %k= 1 %I=01 %l= 1 %P=am %p=AM"},
+		{11, "%H=11 %k=11 %I=11 %l=11 %P=am %p=AM"},
+		{12, "%H=12 %k=12 %I=12 %l=12 %P=pm %p=PM"},
+		{13, "%H=13 %k=13 %I=01 %l= 1 %P=pm %p=PM"},
+		{23, "%H=23 %k=23 %I=11 %l=11 %P=pm %p=PM"},
+	}
+	for _, test := range hourTests {
+		dt := time.Date(2006, 1, 2, test.hour, 4, 5, 0, time.UTC)
+		testDirectives(t, test.hour, dt, test.directives)
 	}
 }
 
 func TestStrftime_dow(t *testing.T) {
-	for day, tests := range dayOfWeekTests {
+	// indexed by 0-based day of month
+	var tests = []string{
+		"%A=Sunday %a=Sun %u=7 %w=0 %d=01 %e= 1 %j=001 %U=01 %V=52 %W=00",
+		"%A=Monday %a=Mon %u=1 %w=1 %d=02 %e= 2 %j=002 %U=01 %V=01 %W=01",
+		"%A=Tuesday %a=Tue %u=2 %w=2 %d=03 %e= 3 %j=003 %U=01 %V=01 %W=01",
+		"%A=Wednesday %a=Wed %u=3 %w=3 %d=04 %e= 4 %j=004 %U=01 %V=01 %W=01",
+		"%A=Thursday %a=Thu %u=4 %w=4 %d=05 %e= 5 %j=005 %U=01 %V=01 %W=01",
+		"%A=Friday %a=Fri %u=5 %w=5 %d=06 %e= 6 %j=006 %U=01 %V=01 %W=01",
+		"%A=Saturday %a=Sat %u=6 %w=6 %d=07 %e= 7 %j=007 %U=01 %V=01 %W=01",
+	}
+	for day, tests := range tests {
 		dt := time.Date(2006, 1, day+1, 15, 4, 5, 0, time.UTC)
-		for _, m := range fieldRE.FindAllStringSubmatch(tests, -1) {
-			format, expect := m[1], m[2]
-			t.Run(fmt.Sprintf("day(%v).Strftime(%q)", day, format), func(t *testing.T) {
-				actual, err := Strftime(format, dt)
-				require.NoError(t, err)
-				require.Equal(t, expect, actual)
-			})
-		}
+		testDirectives(t, day+1, dt, tests)
 	}
 }
 
-var weekTests = map[int]string{
-	2017: "%a=Sun %G=2016 %g=16 %U=01 %V=52 %W=00",
-	2007: "%a=Mon %G=2007 %g=07 %U=00 %V=01 %W=01",
-	2013: "%a=Tue %G=2013 %g=13 %U=00 %V=01 %W=00",
-	2014: "%a=Wed %G=2014 %g=14 %U=00 %V=01 %W=00",
-	2015: "%a=Thu %G=2015 %g=15 %U=00 %V=01 %W=00",
-	2016: "%a=Fri %G=2015 %g=15 %U=00 %V=53 %W=00",
-	2011: "%a=Sat %G=2010 %g=10 %U=00 %V=52 %W=00",
-}
-
 func TestStrftime_weeks(t *testing.T) {
-	for year, tests := range weekTests {
+	var tests = map[int]string{
+		2017: "%a=Sun %G=2016 %g=16 %U=01 %V=52 %W=00",
+		2007: "%a=Mon %G=2007 %g=07 %U=00 %V=01 %W=01",
+		2013: "%a=Tue %G=2013 %g=13 %U=00 %V=01 %W=00",
+		2014: "%a=Wed %G=2014 %g=14 %U=00 %V=01 %W=00",
+		2015: "%a=Thu %G=2015 %g=15 %U=00 %V=01 %W=00",
+		2016: "%a=Fri %G=2015 %g=15 %U=00 %V=53 %W=00",
+		2011: "%a=Sat %G=2010 %g=10 %U=00 %V=52 %W=00",
+	}
+	for year, directives := range tests {
 		dt := time.Date(year, 1, 1, 15, 4, 5, 0, time.UTC)
-		for _, m := range fieldRE.FindAllStringSubmatch(tests, -1) {
-			format, expect := m[1], m[2]
-			t.Run(fmt.Sprintf("%s.Strftime(%q)", dt.Weekday(), format), func(t *testing.T) {
-				actual, err := Strftime(format, dt)
-				require.NoError(t, err)
-				require.Equal(t, expect, actual)
-			})
-		}
+		testDirectives(t, year, dt, directives)
 	}
 }
 
@@ -257,4 +191,57 @@ func ExampleStrftime_timezone() {
 	s, _ := Strftime("%Z %z %:z %::z", t)
 	fmt.Println(s)
 	// Output: EDT -0400 -04:00 -04:00:00
+}
+
+func init() {
+	if err := os.Setenv("TZ", "America/New_York"); err != nil {
+		log.Fatalf("set timezone %s\n", err)
+	}
+}
+
+func readConversionTests() ([][]string, error) {
+	skip := map[string]bool{"%_z": true}
+	for _, test := range conversionTests {
+		skip[test.format] = true
+	}
+
+	f, err := os.Open("testdata/tests.csv")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close() // nolint: errcheck
+
+	r := csv.NewReader(f)
+	recs, err := r.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+	tests := make([][]string, 0, len(recs))
+	for _, row := range recs {
+		if !skip[row[0]] {
+			tests = append(tests, row)
+		}
+	}
+	return tests, nil
+}
+
+// runs a separate test for each e.g. "%a=Mon" in directives.
+func testDirectives(t *testing.T, label interface{}, dt time.Time, directives string) {
+	var fieldRE = regexp.MustCompile(`(\S+)=(\s*\S+)`)
+	for _, m := range fieldRE.FindAllStringSubmatch(directives, -1) {
+		format, expect := m[1], m[2]
+		t.Run(fmt.Sprintf("%v.Strftime(%q)", label, format), func(t *testing.T) {
+			actual, err := Strftime(format, dt)
+			require.NoError(t, err)
+			require.Equal(t, expect, actual)
+		})
+	}
+}
+
+func timeMustParse(f, s string) time.Time {
+	t, err := time.ParseInLocation(f, s, time.Local)
+	if err != nil {
+		log.Fatalf("time.ParseInLocation %s\n", err)
+	}
+	return t
 }
