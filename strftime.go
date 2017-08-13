@@ -63,7 +63,7 @@ func Strftime(format string, t time.Time) (string, error) {
 	}), nil
 }
 
-var re = regexp.MustCompile(`%([-_^#0]|::?)?(\d+)?[EO]?([a-zA-Z\+nt%])`)
+var re = regexp.MustCompile(`%([-_^#0]|:{1,3})?(\d+)?[EO]?([a-zA-Z\+nt%])`)
 
 // Test whether a string is uppercase, for purpose of applying the # case reversal flag.
 // This is ASCII-only and is foiled by spaces and punctuation, but is sufficient for this context.
@@ -158,17 +158,34 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 	// Time zone
 	case 'z':
 		_, offset := t.Zone()
+		sign := '+'
+		if offset < 0 {
+			offset, sign = -offset, '-'
+		}
 		var (
 			h = offset / 3600
 			m = (offset / 60) % 60
+			s = offset % 60
 		)
+		if flags == ":::" {
+			switch {
+			case s != 0:
+				flags = "::"
+			case m != 0:
+				flags = ":"
+			default:
+				flags = "H" // not a real flag; only used to talk to next switch
+			}
+		}
 		switch flags {
+		case "H":
+			return fmt.Sprintf("%c%02d", sign, h)
 		case ":":
-			return fmt.Sprintf("%+03d:%02d", h, m)
+			return fmt.Sprintf("%c%02d:%02d", sign, h, m)
 		case "::":
-			return fmt.Sprintf("%+03d:%02d:%02d", h, m, offset%60)
+			return fmt.Sprintf("%c%02d:%02d:%02d", sign, h, m, s)
 		default:
-			return fmt.Sprintf("%+03d%02d", h, m)
+			return fmt.Sprintf("%c%02d%02d", sign, h, m)
 		}
 	case 'Z':
 		z, _ := t.Zone()

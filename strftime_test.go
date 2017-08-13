@@ -172,10 +172,35 @@ func TestStrftime_zones(t *testing.T) {
 		{"02 Jul 06 15:04 EDT", "%z=-0400 %Z=EDT"},
 	}
 	for _, test := range tests {
-		rt := timeMustParse(time.RFC822, test.source)
-		actual, err := Strftime("%%z=%z %%Z=%Z", rt)
-		require.NoErrorf(t, err, test.source)
-		require.Equalf(t, test.expect, actual, test.source)
+		dt := timeMustParse(time.RFC822, test.source)
+		testDirectives(t, test.source, dt, test.expect)
+	}
+
+	tests2 := []struct {
+		source string
+		sec    int // overrides source TZ, if non-zero
+		expect string
+	}{
+		{"02 Jan 06 15:04 +0500", 0, "%z=+0500 %:z=+05:00 %::z=+05:00:00 %:::z=+05"},
+		{"02 Jan 06 15:04 +0530", 0, "%z=+0530 %:z=+05:30 %::z=+05:30:00 %:::z=+05:30"},
+		{"02 Jan 06 15:04 -0700", 0, "%z=-0700 %:z=-07:00 %::z=-07:00:00 %:::z=-07"},
+		{"02 Jan 06 15:04 -0730", 0, "%z=-0730 %:z=-07:30 %::z=-07:30:00 %:::z=-07:30"},
+		{"02 Jan 06 15:04 +0000", 45, "%z=+0000 %:z=+00:00 %::z=+00:00:45 %:::z=+00:00:45"},
+		{"02 Jan 06 15:04 +0000", 60, "%z=+0001 %:z=+00:01 %::z=+00:01:00 %:::z=+00:01"},
+		{"02 Jan 06 15:04 +0000", 105, "%z=+0001 %:z=+00:01 %::z=+00:01:45 %:::z=+00:01:45"},
+		{"02 Jan 06 15:04 +0000", -45, "%z=-0000 %:z=-00:00 %::z=-00:00:45 %:::z=-00:00:45"},
+		{"02 Jan 06 15:04 +0000", -60, "%z=-0001 %:z=-00:01 %::z=-00:01:00 %:::z=-00:01"},
+		{"02 Jan 06 15:04 +0000", -27000, "%z=-0730 %:z=-07:30 %::z=-07:30:00 %:::z=-07:30"},
+		{"02 Jan 06 15:04 +0000", -18015, "%z=-0500 %:z=-05:00 %::z=-05:00:15 %:::z=-05:00:15"},
+		{"02 Jan 06 15:04 -0730", -27045, "%z=-0730 %:z=-07:30 %::z=-07:30:45 %:::z=-07:30:45"},
+	}
+	for i, test := range tests2 {
+		dt := timeMustParse(time.RFC822Z, test.source)
+		if test.sec != 0 {
+			loc := time.FixedZone("FTZ", test.sec)
+			dt = time.Date(dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second(), dt.Nanosecond(), loc)
+		}
+		testDirectives(t, i, dt, test.expect)
 	}
 }
 
