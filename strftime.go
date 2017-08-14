@@ -253,8 +253,8 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 		y, m, d := t.Date()
 		return fmt.Sprintf("%04d-%02d-%02d", y, m, d)
 	case 'v':
-		// VMS date (%e-%b-%Y)
-		return fmt.Sprintf("%2d-%s-%04d", t.Day(), t.Month().String()[:3], t.Year())
+		// VMS date (%e-%^b-%4Y)
+		return fmt.Sprintf("%2d-%s-%04d", t.Day(), strings.ToUpper(t.Month().String()[:3]), t.Year())
 	case 'r':
 		// 12-hour time (%I:%M:%S %p)
 		h, m, s := t.Clock()

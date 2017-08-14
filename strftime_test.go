@@ -80,7 +80,6 @@ var conversionTests = []struct{ format, expect string }{
 	{"%+", "Mon Jan  2 15:04:05 EST 2006"},
 
 	// do what Ruby says it does, rather than what it does
-	{"%v", " 2-Jan-2006"},
 	{"%Z", "EST"},
 
 	// spot checks
