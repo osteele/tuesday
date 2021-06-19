@@ -5,7 +5,6 @@ ci: setup test
 
 setup:
 	go get -t ./...
-	golangci-lint run
 
 generate:
 	go generate ./...
