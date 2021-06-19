@@ -5,7 +5,7 @@ ci: setup test
 
 setup:
 	go get -t ./...
-	gometalinter --install
+	golangci-lint run
 
 generate:
 	go generate ./...
