@@ -1,12 +1,12 @@
 # Tuesday: Ruby-Compatible Strftime for Go
 
- [![][travis-svg]][travis-url]
- [![][golangci-lint-svg]][golangci-lint-url]
- [![][appveyor-svg]][appveyor-url]
- [![][coveralls-svg]][coveralls-url]
- [![][go-report-card-svg]][go-report-card-url]
- [![][godoc-svg]][godoc-url]
- [![][license-svg]][license-url]
+ [![Travis badge][travis-svg]][travis-url]
+ [![Golangci-lint badge][golangci-lint-svg]][golangci-lint-url]
+ [![Appveyor badge][appveyor-svg]][appveyor-url]
+ [![Coveralls badge][coveralls-svg]][coveralls-url]
+ [![Go Report Card badge][go-report-card-svg]][go-report-card-url]
+ [![Godoc badge][godoc-svg]][godoc-url]
+ [![MIT License][license-svg]][license-url]
 
 This package provides a function `Strftime` that is compatible with Ruby's [`Time.strftime`](https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime).
 
