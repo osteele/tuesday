@@ -1,6 +1,7 @@
 # Tuesday: Ruby-Compatible Strftime for Go
 
  [![][travis-svg]][travis-url]
+ ![][golangci-lint-svg]
  [![][appveyor-svg]][appveyor-url]
  [![][coveralls-svg]][coveralls-url]
  [![][go-report-card-svg]][go-report-card-url]
@@ -39,6 +40,8 @@ MIT License
 
 [godoc-url]: https://godoc.org/github.com/osteele/tuesday
 [godoc-svg]: https://godoc.org/github.com/osteele/tuesday?status.svg
+
+[golangci-lint-svg]: https://github.com/github/osteele/tuesday/workflows/golangci-lint.yml/badge.svg
 
 [license-url]: https://github.com/osteele/tuesday/blob/master/LICENSE
 [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
