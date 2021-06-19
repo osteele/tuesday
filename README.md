@@ -50,7 +50,7 @@ MIT License
 [go-report-card-url]: https://goreportcard.com/report/github.com/osteele/tuesday
 [go-report-card-svg]: https://goreportcard.com/badge/github.com/osteele/tuesday
 
-[travis-url]: https://travis-ci.org/osteele/tuesday
+[travis-url]: https://travis-ci.com/osteele/tuesday
 [travis-svg]: https://img.shields.io/travis/osteele/tuesday.svg?branch=master
 
 [appveyor-url]: https://ci.appveyor.com/project/osteele/tuesday
