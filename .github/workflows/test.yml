@@ -14,6 +14,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
+      - name: Set timezone (Windows)
+        if: runner.os == 'Windows'
+        run: tzutil /s "Eastern Standard Time"
+      - name: Set timezone (macOS)
+        if: runner.os == 'macOS'
+        run: sudo systemsetup -settimezone America/New_York
       - name: Run tests (Linux/macOS)
         if: runner.os != 'Windows'
         run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
