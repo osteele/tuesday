@@ -34,7 +34,10 @@ func Strftime(format string, t time.Time) (string, error) {
 			pad, w = f.c, f.w
 		}
 		if len(width) > 0 {
-			w, _ = strconv.Atoi(width) // nolint: gas
+			if parsed, err := strconv.Atoi(width); err == nil {
+				w = parsed
+			}
+			// If parsing fails, keep the default width
 		}
 		switch flags {
 		case "-":
@@ -142,7 +145,11 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 	case 'N':
 		ns := t.Nanosecond()
 		if len(width) > 0 {
-			w, _ := strconv.Atoi(width) // nolint: gas
+			w, err := strconv.Atoi(width)
+			if err != nil {
+				// If parsing fails, return full nanoseconds
+				return ns
+			}
 			if w <= 9 {
 				return fmt.Sprintf("%09d", ns)[:w]
 			}
@@ -270,7 +277,7 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 		return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 	case '+':
 		// date(1) (%a %b %e %H:%M:%S %Z %Y)
-		s, _ := Strftime("%a %b %e %H:%M:%S %Z %Y", t) // nolint: gas
+		s, _ := Strftime("%a %b %e %H:%M:%S %Z %Y", t)
 		return s
 	default:
 		return string([]rune{'%', c})

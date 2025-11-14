@@ -233,7 +233,9 @@ func readConversionTests() ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close() // nolint: errcheck
+	defer func() {
+		_ = f.Close() // Error during close on read-only file is not critical
+	}()
 
 	r := csv.NewReader(f)
 	recs, err := r.ReadAll()
