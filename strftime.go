@@ -34,10 +34,7 @@ func Strftime(format string, t time.Time) (string, error) {
 			pad, w = f.c, f.w
 		}
 		if len(width) > 0 {
-			if parsed, err := strconv.Atoi(width); err == nil {
-				w = parsed
-			}
-			// If parsing fails, keep the default width
+			w, _ = strconv.Atoi(width) // width is guaranteed to be digits by regex
 		}
 		switch flags {
 		case "-":
@@ -145,11 +142,7 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 	case 'N':
 		ns := t.Nanosecond()
 		if len(width) > 0 {
-			w, err := strconv.Atoi(width)
-			if err != nil {
-				// If parsing fails, return full nanoseconds
-				return ns
-			}
+			w, _ := strconv.Atoi(width) // width is guaranteed to be digits by regex
 			if w <= 9 {
 				return fmt.Sprintf("%09d", ns)[:w]
 			}
