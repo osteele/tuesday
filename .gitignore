@@ -1,0 +1,16 @@
+# Test coverage
+coverage.txt
+*.out
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Go workspace file
+go.work

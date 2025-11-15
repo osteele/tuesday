@@ -1,12 +1,11 @@
 # Tuesday: Ruby-Compatible Strftime for Go
 
- [![Travis badge][travis-svg]][travis-url]
- [![Golangci-lint badge][golangci-lint-svg]][golangci-lint-url]
- [![Appveyor badge][appveyor-svg]][appveyor-url]
- [![Coveralls badge][coveralls-svg]][coveralls-url]
- [![Go Report Card badge][go-report-card-svg]][go-report-card-url]
- [![Godoc badge][godoc-svg]][godoc-url]
- [![MIT License][license-svg]][license-url]
+[![Test badge][test-svg]][test-url]
+[![Golangci-lint badge][golangci-lint-svg]][golangci-lint-url]
+[![Coveralls badge][coveralls-svg]][coveralls-url]
+[![Go Report Card badge][go-report-card-svg]][go-report-card-url]
+[![Godoc badge][godoc-svg]][godoc-url]
+[![MIT License][license-svg]][license-url]
 
 This package provides a function `Strftime` that is compatible with Ruby's [`Time.strftime`](https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime).
 
@@ -35,23 +34,20 @@ It was developed for use with in [Liquid](https://github.com/osteele/liquid) and
 
 MIT License
 
-[coveralls-url]: https://coveralls.io/r/osteele/tuesday?branch=master
-[coveralls-svg]: https://img.shields.io/coveralls/osteele/tuesday.svg?branch=master
-
-[godoc-url]: https://godoc.org/github.com/osteele/tuesday
-[godoc-svg]: https://godoc.org/github.com/osteele/tuesday?status.svg
+[test-url]: https://github.com/osteele/tuesday/actions?query=workflow%3ATest
+[test-svg]: https://github.com/osteele/tuesday/actions/workflows/test.yml/badge.svg
 
 [golangci-lint-url]: https://github.com/osteele/tuesday/actions?query=workflow%3Agolangci-lint
 [golangci-lint-svg]: https://github.com/osteele/tuesday/actions/workflows/golangci-lint.yml/badge.svg
 
-[license-url]: https://github.com/osteele/tuesday/blob/master/LICENSE
-[license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
+[coveralls-url]: https://coveralls.io/r/osteele/tuesday?branch=master
+[coveralls-svg]: https://img.shields.io/coveralls/osteele/tuesday.svg?branch=master
 
 [go-report-card-url]: https://goreportcard.com/report/github.com/osteele/tuesday
 [go-report-card-svg]: https://goreportcard.com/badge/github.com/osteele/tuesday
 
-[travis-url]: https://travis-ci.com/osteele/tuesday
-[travis-svg]: https://img.shields.io/travis/osteele/tuesday.svg?branch=master
+[godoc-url]: https://godoc.org/github.com/osteele/tuesday
+[godoc-svg]: https://godoc.org/github.com/osteele/tuesday?status.svg
 
-[appveyor-url]: https://ci.appveyor.com/project/osteele/tuesday
-[appveyor-svg]: https://ci.appveyor.com/api/projects/status/y9cyh4e30yjxshtm?svg=true
+[license-url]: https://github.com/osteele/tuesday/blob/master/LICENSE
+[license-svg]: https://img.shields.io/badge/license-MIT-blue.svg

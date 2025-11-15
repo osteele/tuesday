@@ -28,6 +28,11 @@ var conversionTests = []struct{ format, expect string }{
 	{"%9N", "123456789"},
 	{"%12N", "123456789000"},
 
+	// Edge cases for %N width
+	{"%10N", "1234567890"},
+	{"%15N", "123456789000000"},
+	{"%18N", "123456789000000000"},
+
 	// width
 	{"%1H", "15"},
 	{"%2H", "15"},
@@ -233,7 +238,9 @@ func readConversionTests() ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close() // nolint: errcheck
+	defer func() {
+		_ = f.Close() // Error during close on read-only file is not critical
+	}()
 
 	r := csv.NewReader(f)
 	recs, err := r.ReadAll()
