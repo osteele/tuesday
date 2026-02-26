@@ -40,7 +40,7 @@ func Strftime(format string, t time.Time) (string, error) {
 		case "-":
 			w = 0
 		case "_":
-			pad = '-'
+			pad = '-' // fmt '-' flag produces space-padding (left-align)
 		case "0":
 			pad = '0'
 		}
