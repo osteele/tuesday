@@ -2,7 +2,7 @@ name: test
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
 
 jobs:
@@ -46,3 +46,4 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           file: coverage.txt
+        continue-on-error: true
