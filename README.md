@@ -1,8 +1,7 @@
 # Tuesday: Ruby-Compatible Strftime for Go
 
- [![Travis badge][travis-svg]][travis-url]
+ [![Test badge][test-svg]][test-url]
  [![Golangci-lint badge][golangci-lint-svg]][golangci-lint-url]
- [![Appveyor badge][appveyor-svg]][appveyor-url]
  [![Coveralls badge][coveralls-svg]][coveralls-url]
  [![Go Report Card badge][go-report-card-svg]][go-report-card-url]
  [![Godoc badge][godoc-svg]][godoc-url]
@@ -50,8 +49,5 @@ MIT License
 [go-report-card-url]: https://goreportcard.com/report/github.com/osteele/tuesday
 [go-report-card-svg]: https://goreportcard.com/badge/github.com/osteele/tuesday
 
-[travis-url]: https://travis-ci.com/osteele/tuesday
-[travis-svg]: https://img.shields.io/travis/osteele/tuesday.svg?branch=master
-
-[appveyor-url]: https://ci.appveyor.com/project/osteele/tuesday
-[appveyor-svg]: https://ci.appveyor.com/api/projects/status/y9cyh4e30yjxshtm?svg=true
+[test-url]: https://github.com/osteele/tuesday/actions?query=workflow%3Atest
+[test-svg]: https://github.com/osteele/tuesday/actions/workflows/test.yml/badge.svg
