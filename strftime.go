@@ -79,7 +79,6 @@ var defaultPadding = map[rune]struct {
 	w int
 }{
 	'e': {'-', 2},
-	'f': {'0', 6},
 	'j': {'0', 3},
 	'k': {'-', 2},
 	'L': {'0', 3},
