@@ -74,9 +74,9 @@ var conversionTests = []struct{ format, expect string }{
 	{"%J", "%J"},
 	{"%⌘", "%⌘"},
 
-	// Date.strftime uses these, but the test table is generated from Time
-	{"%Q", "1136232245123456"},
-	{"%_Q", "1136232245123456"},
+	// DateTime.strftime uses these, but the test table is generated from Time
+	{"%Q", "1136232245123"},
+	{"%_Q", "1136232245123"},
 	{"%+", "Mon Jan  2 15:04:05 EST 2006"},
 
 	// do what Ruby says it does, rather than what it does

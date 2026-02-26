@@ -225,11 +225,12 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 		}
 		return (d + 6) / 7
 
-	// Epoch seconds
+	// Epoch time
 	case 's':
 		return t.Unix()
 	case 'Q':
-		return t.UnixNano() / 1000
+		// Milliseconds since epoch (Ruby DateTime#strftime)
+		return t.UnixNano() / 1e6
 
 	// Literals
 	case 'n':
