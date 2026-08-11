@@ -20,9 +20,7 @@ It was developed for use with in [Liquid](https://github.com/osteele/liquid) and
 
 ## Install
 
-`go get gopkg.in/osteele/tuesday.v1` # latest snapshot
-
-`go get -u github.com/osteele/tuesday` # development version
+`go get github.com/osteele/tuesday@v1.0.4`
 
 ## References
 

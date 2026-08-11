@@ -203,6 +203,66 @@ func TestStrftime_zones(t *testing.T) {
 	}
 }
 
+func TestStrftime_RubyCompatibilityEdges(t *testing.T) {
+	dt := time.Date(2006, 1, 2, 15, 4, 5, 123456789, time.FixedZone("EST", -5*60*60))
+	tests := []struct{ format, expect string }{
+		{"%10A", "    Monday"},
+		{"%10Z", "       EST"},
+		{"%_z", " -500"},
+		{"%10z", "-000000500"},
+		{"%10:z", "-000005:00"},
+		{"%_-z", "-0500"},
+		{"%-_z", " -500"},
+		{"%-^A", "MONDAY"},
+		{"%#^Z", "est"},
+		{"%#c", "Mon Jan  2 15:04:05 2006"},
+		{"%#^c", "MON JAN  2 15:04:05 2006"},
+		{"%_J", "%_J"},
+		{"%EJ", "%EJ"},
+		{"%:J", "%:J"},
+		{"%6L", "123456"},
+		{"%12L", "123456789000"},
+	}
+	for _, test := range tests {
+		t.Run(test.format, func(t *testing.T) {
+			actual, err := Strftime(test.format, dt)
+			require.NoError(t, err)
+			require.Equal(t, test.expect, actual)
+		})
+	}
+
+	smallNS := time.Date(2006, 1, 2, 15, 4, 5, 1, time.UTC)
+	for _, format := range []string{"%-N", "%_N"} {
+		actual, err := Strftime(format, smallNS)
+		require.NoError(t, err)
+		require.Equal(t, "000000001", actual)
+	}
+}
+
+func TestStrftime_epochConversions(t *testing.T) {
+	tests := []struct {
+		time   time.Time
+		format string
+		expect string
+	}{
+		{time.Unix(0, 0), "%s", "0"},
+		{time.Unix(0, 0), "%Q", "0"},
+		{time.Unix(1, 0), "%s", "1"},
+		{time.Unix(-1, 999500000), "%Q", "-1"},
+		{time.Date(1600, 1, 1, 0, 0, 0, 0, time.UTC), "%Q", "-11676096000000"},
+		{time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC), "%Q", "32503680000000"},
+		{time.Date(6, 7, 1, 0, 0, 0, 0, time.UTC), "%G", "0006"},
+	}
+	for _, test := range tests {
+		name := fmt.Sprintf("%s_%s", test.time.Format(time.RFC3339Nano), test.format)
+		t.Run(name, func(t *testing.T) {
+			actual, err := Strftime(test.format, test.time)
+			require.NoError(t, err)
+			require.Equal(t, test.expect, actual)
+		})
+	}
+}
+
 func ExampleStrftime_flags() {
 	t, _ := time.Parse(time.RFC822, "10 Jul 17 18:45 EDT")
 	s, _ := Strftime("%B %^B %m %_m %-m %6Y", t)
@@ -224,7 +284,7 @@ func init() {
 }
 
 func readConversionTests() ([][]string, error) {
-	skip := map[string]bool{"%_z": true}
+	skip := make(map[string]bool)
 	for _, test := range conversionTests {
 		skip[test.format] = true
 	}

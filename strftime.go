@@ -20,54 +20,65 @@ import (
 // but in the current implementation this error is always nil.
 func Strftime(format string, t time.Time) (string, error) {
 	return re.ReplaceAllStringFunc(format, func(directive string) string {
-		var (
-			pad, w        = '0', 2
-			m             = re.FindAllStringSubmatch(directive, 1)[0]
-			flags, width  = m[1], m[2]
-			conversion, _ = utf8.DecodeRuneInString(m[3])
-			c             = convert(t, conversion, flags, width)
-		)
-		if s, ok := c.(string); ok {
-			return applyFlags(flags, s)
+		m := re.FindStringSubmatch(directive)
+		flags, width, colons := m[1], m[2], m[4]
+		conversion, _ := utf8.DecodeRuneInString(m[5])
+
+		if colons != "" && conversion != 'z' {
+			return directive
 		}
+		if conversion == 'z' {
+			return formatZone(t, flags, width, colons)
+		}
+		if conversion == 'L' || conversion == 'N' {
+			defaultWidth := 9
+			if conversion == 'L' {
+				defaultWidth = 3
+			}
+			return formatFraction(t.Nanosecond(), width, defaultWidth)
+		}
+
+		c := convert(t, conversion)
+		if _, ok := c.(unsupportedConversion); ok {
+			return directive
+		}
+		if s, ok := c.(string); ok {
+			s = applyCaseFlags(flags, conversion, s)
+			return padString(s, flags, width)
+		}
+
+		pad, w := '0', 2
 		if f, ok := defaultPadding[conversion]; ok {
 			pad, w = f.c, f.w
 		}
-		if len(width) > 0 {
-			w, _ = strconv.Atoi(width) // nolint: gas
+		if width != "" {
+			var err error
+			w, err = strconv.Atoi(width)
+			if err != nil {
+				return directive
+			}
 		}
-		switch flags {
-		case "-":
+		if strings.Contains(flags, "-") {
 			w = 0
-		case "_":
-			pad = '-' // fmt '-' flag produces space-padding (left-align)
-		case "0":
-			pad = '0'
+		} else {
+			pad = paddingFlag(flags, pad)
 		}
-		var fm string
+		var s string
 		switch {
-		// Hardcode the defaults:
-		case pad == '-' && w == 2:
-			fm = "%2d"
-		case pad == '0' && w == 2:
-			fm = "%02d"
-		case pad == '0' && w == 3:
-			fm = "%03d"
-		case pad == '-':
-			fm = fmt.Sprintf("%%%dd", w)
+		case w == 0:
+			s = fmt.Sprintf("%d", c)
+		case pad == '0':
+			s = fmt.Sprintf("%0*d", w, c)
 		default:
-			fm = fmt.Sprintf("%%%c%dd", pad, w)
+			s = fmt.Sprintf("%*d", w, c)
 		}
-		s := fmt.Sprintf(fm, c)
-		return applyFlags(flags, s)
+		return applyCaseFlags(flags, conversion, s)
 	}), nil
 }
 
-var re = regexp.MustCompile(`%([-_^#0]|:{1,3})?(\d+)?[EO]?([a-zA-Z\+nt%])`)
+var re = regexp.MustCompile(`%([-_^#0]*)(\d+)?([EO]?)(:{1,3})?([a-zA-Z\+nt%])`)
 
-// Test whether a string is uppercase, for purpose of applying the # case reversal flag.
-// This is ASCII-only and is foiled by spaces and punctuation, but is sufficient for this context.
-var isUpperRE = regexp.MustCompile(`^[[:upper:]]+$`).MatchString
+type unsupportedConversion struct{}
 
 var amPmTable = map[bool]string{true: "AM", false: "PM"}
 var amPmLowerTable = map[bool]string{true: "am", false: "pm"}
@@ -81,29 +92,131 @@ var defaultPadding = map[rune]struct {
 	'e': {'-', 2},
 	'j': {'0', 3},
 	'k': {'-', 2},
-	'L': {'0', 3},
 	'l': {'-', 2},
-	'N': {'0', 9},
+	'G': {'0', 4},
+	'Q': {'-', 0},
+	's': {'-', 0},
 	'u': {'-', 0},
 	'w': {'-', 0},
 	'Y': {'0', 4},
 }
 
-func applyFlags(flags, s string) string {
-	switch flags {
-	case "^":
-		return strings.ToUpper(s)
-	case "#":
-		if isUpperRE(s) {
-			return strings.ToLower(s)
+func applyCaseFlags(flags string, conversion rune, s string) string {
+	if strings.Contains(flags, "#") && strings.ContainsRune("ABPZabhp", conversion) {
+		upper, lower := strings.ToUpper(s), strings.ToLower(s)
+		if s == upper && s != lower {
+			return lower
 		}
-		return strings.ToUpper(s)
-	default:
-		return s
+		return upper
 	}
+	if strings.Contains(flags, "^") {
+		return strings.ToUpper(s)
+	}
+	return s
 }
 
-func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: gocyclo
+func paddingFlag(flags string, defaultPad rune) rune {
+	pad := defaultPad
+	for _, flag := range flags {
+		switch flag {
+		case '_':
+			pad = ' '
+		case '0':
+			pad = '0'
+		}
+	}
+	return pad
+}
+
+func padString(s, flags, width string) string {
+	if width == "" || strings.Contains(flags, "-") {
+		return s
+	}
+	w, err := strconv.Atoi(width)
+	if err != nil || len(s) >= w {
+		return s
+	}
+	pad := paddingFlag(flags, ' ')
+	return strings.Repeat(string(pad), w-len(s)) + s
+}
+
+func formatFraction(ns int, width string, defaultWidth int) string {
+	w := defaultWidth
+	if width != "" {
+		var err error
+		w, err = strconv.Atoi(width)
+		if err != nil {
+			return ""
+		}
+	}
+	digits := fmt.Sprintf("%09d", ns)
+	if w <= len(digits) {
+		return digits[:w]
+	}
+	return digits + strings.Repeat("0", w-len(digits))
+}
+
+func formatZone(t time.Time, flags, width, colons string) string {
+	_, offset := t.Zone()
+	sign := '+'
+	if offset < 0 {
+		offset, sign = -offset, '-'
+	}
+	h, m, s := offset/3600, (offset/60)%60, offset%60
+
+	var body string
+	defaultWidth := 5
+	switch colons {
+	case ":":
+		body, defaultWidth = fmt.Sprintf("%d:%02d", h, m), 6
+	case "::":
+		body, defaultWidth = fmt.Sprintf("%d:%02d:%02d", h, m, s), 9
+	case ":::":
+		switch {
+		case s != 0:
+			body, defaultWidth = fmt.Sprintf("%d:%02d:%02d", h, m, s), 9
+		case m != 0:
+			body, defaultWidth = fmt.Sprintf("%d:%02d", h, m), 6
+		default:
+			body, defaultWidth = strconv.Itoa(h), 3
+		}
+	default:
+		body = strconv.Itoa(h*100 + m)
+	}
+
+	w := defaultWidth
+	if width != "" {
+		var err error
+		w, err = strconv.Atoi(width)
+		if err != nil {
+			return ""
+		}
+	}
+	pad := zonePaddingFlag(flags)
+	if n := w - 1 - len(body); n > 0 {
+		if pad == '0' {
+			body = strings.Repeat("0", n) + body
+		} else {
+			return strings.Repeat(" ", n) + string(sign) + body
+		}
+	}
+	return string(sign) + body
+}
+
+func zonePaddingFlag(flags string) rune {
+	pad := '0'
+	for _, flag := range flags {
+		switch flag {
+		case '_':
+			pad = ' '
+		case '-', '0':
+			pad = '0'
+		}
+	}
+	return pad
+}
+
+func convert(t time.Time, c rune) interface{} { // nolint: gocyclo
 	switch c {
 
 	// Date
@@ -136,56 +249,12 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 		return t.Minute()
 	case 'S':
 		return t.Second()
-	case 'L':
-		return t.Nanosecond() / 1e6
-	case 'N':
-		ns := t.Nanosecond()
-		if len(width) > 0 {
-			w, _ := strconv.Atoi(width) // nolint: gas
-			if w <= 9 {
-				return fmt.Sprintf("%09d", ns)[:w]
-			}
-			return fmt.Sprintf(fmt.Sprintf("%%09d%%0%dd", w-9), ns, 0)
-		}
-		return ns
-
 	case 'P':
 		return amPmLowerTable[t.Hour() < 12]
 	case 'p':
 		return amPmTable[t.Hour() < 12]
 
 	// Time zone
-	case 'z':
-		_, offset := t.Zone()
-		sign := '+'
-		if offset < 0 {
-			offset, sign = -offset, '-'
-		}
-		var (
-			h = offset / 3600
-			m = (offset / 60) % 60
-			s = offset % 60
-		)
-		if flags == ":::" {
-			switch {
-			case s != 0:
-				flags = "::"
-			case m != 0:
-				flags = ":"
-			default:
-				flags = "H" // not a real flag; only used to talk to next switch
-			}
-		}
-		switch flags {
-		case "H":
-			return fmt.Sprintf("%c%02d", sign, h)
-		case ":":
-			return fmt.Sprintf("%c%02d:%02d", sign, h, m)
-		case "::":
-			return fmt.Sprintf("%c%02d:%02d:%02d", sign, h, m, s)
-		default:
-			return fmt.Sprintf("%c%02d%02d", sign, h, m)
-		}
 	case 'Z':
 		z, _ := t.Zone()
 		return z
@@ -229,7 +298,7 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 		return t.Unix()
 	case 'Q':
 		// Milliseconds since epoch (Ruby DateTime#strftime)
-		return t.UnixNano() / 1e6
+		return t.UnixMilli()
 
 	// Literals
 	case 'n':
@@ -273,6 +342,6 @@ func convert(t time.Time, c rune, flags, width string) interface{} { // nolint: 
 		s, _ := Strftime("%a %b %e %H:%M:%S %Z %Y", t) // nolint: gas
 		return s
 	default:
-		return string([]rune{'%', c})
+		return unsupportedConversion{}
 	}
 }

@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Document the canonical Go module installation path.
+
+### Fixed
+
+- Correct epoch formatting near 1970 and outside the range supported by
+  `time.Time.UnixNano`.
+- Match Ruby's handling of combined flags, field widths, timezone padding,
+  fractional-second precision, and unsupported directives.
+
 ## [v1.0.4] - 2026-02-26
 
 ### Fixed
@@ -50,6 +63,7 @@ Initial release. Ruby-compatible `strftime` for Go, supporting:
 - Padding flags (`-`, `_`, `0`), case flags (`^`, `#`), and field widths
 - Ruby-specific conversions: `%s`, `%N`, `%L`, `%:z`, `%::z`
 
+[Unreleased]: https://github.com/osteele/tuesday/compare/v1.0.4...HEAD
 [v1.0.4]: https://github.com/osteele/tuesday/compare/v1.0.3...v1.0.4
 [v1.0.3]: https://github.com/osteele/tuesday/compare/v1.0.2...v1.0.3
 [v1.0.2]: https://github.com/osteele/tuesday/compare/v1.0.1...v1.0.2
