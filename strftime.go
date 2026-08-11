@@ -1,4 +1,4 @@
-// Package tuesday implements Ruby-compatible strftime formatting.
+// Package tuesday implements strftime formatting compatible with Ruby 3.4.
 package tuesday
 
 //go:generate ruby testdata/gen.rb
@@ -112,7 +112,8 @@ func (f *Formatter) Format(t time.Time) string {
 }
 
 // Strftime formats t according to a Ruby-compatible strftime format.
-// Unsupported directives are retained as literal text.
+// Unsupported directives are retained as literal text. Strftime returns an
+// error if a supported directive requests a field width greater than 1 MiB.
 func Strftime(format string, t time.Time) (string, error) {
 	formatter, err := Compile(format)
 	if err != nil {

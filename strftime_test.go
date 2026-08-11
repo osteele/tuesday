@@ -303,6 +303,13 @@ func ExampleStrftime_timezone() {
 	// Output: EDT -0400 -04:00 -04:00:00
 }
 
+func ExampleFormatter_Format() {
+	formatter, _ := Compile("%a, %b %d, %Y")
+	value := time.Date(2026, 8, 11, 15, 4, 5, 0, time.UTC)
+	fmt.Println(formatter.Format(value))
+	// Output: Tue, Aug 11, 2026
+}
+
 func init() {
 	if err := os.Setenv("TZ", "America/New_York"); err != nil {
 		log.Fatalf("set timezone %s\n", err)

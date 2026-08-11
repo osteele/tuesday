@@ -2,9 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- Add reusable, concurrency-safe compiled formatters through `Compile` and
+  `Formatter.Format`.
+
 ### Changed
 
 - Document the canonical Go module installation path.
+- Define the Ruby 3.4 compatibility contract and current formatting limits.
+- Reject supported field widths greater than 1 MiB instead of risking excessive
+  allocation.
+- Remove all external module dependencies.
 
 ### Fixed
 
