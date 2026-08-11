@@ -278,7 +278,7 @@ func formatZone(t time.Time, d directive) string {
 			body, defaultWidth = strconv.Itoa(h), 3
 		}
 	default:
-		body = strconv.Itoa(h*100 + m)
+		body = fmt.Sprintf("%03d", h*100+m)
 	}
 
 	width := defaultWidth
