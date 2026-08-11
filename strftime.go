@@ -1,4 +1,4 @@
-// Package tuesday implements a Strftime function that is compatible with Ruby's Time.strftime.
+// Package tuesday implements Ruby-compatible strftime formatting.
 package tuesday
 
 //go:generate ruby testdata/gen.rb
@@ -12,93 +12,198 @@ import (
 	"unicode/utf8"
 )
 
-// Strftime is compatible with Ruby's Time.strftime.
-//
-// See https://ruby-doc.org/core-2.4.1/Time.html#method-i-strftime
-//
-// Strftime returns an error for compatibility with other formatting functions and for future compatibility,
-// but in the current implementation this error is always nil.
-func Strftime(format string, t time.Time) (string, error) {
-	return re.ReplaceAllStringFunc(format, func(directive string) string {
-		m := re.FindStringSubmatch(directive)
-		flags, width, colons := m[1], m[2], m[4]
-		conversion, _ := utf8.DecodeRuneInString(m[5])
+const maxFieldWidth = 1 << 20
 
-		if colons != "" && conversion != 'z' {
-			return directive
-		}
-		if conversion == 'z' {
-			return formatZone(t, flags, width, colons)
-		}
-		if conversion == 'L' || conversion == 'N' {
-			defaultWidth := 9
-			if conversion == 'L' {
-				defaultWidth = 3
-			}
-			return formatFraction(t.Nanosecond(), width, defaultWidth)
-		}
+var directiveRE = regexp.MustCompile(`%([-_^#0]*)(\d+)?([EO]?)(:{1,3})?([a-zA-Z\+nt%])`)
 
-		c := convert(t, conversion)
-		if _, ok := c.(unsupportedConversion); ok {
-			return directive
-		}
-		if s, ok := c.(string); ok {
-			s = applyCaseFlags(flags, conversion, s)
-			return padString(s, flags, width)
-		}
-
-		pad, w := '0', 2
-		if f, ok := defaultPadding[conversion]; ok {
-			pad, w = f.c, f.w
-		}
-		if width != "" {
-			var err error
-			w, err = strconv.Atoi(width)
-			if err != nil {
-				return directive
-			}
-		}
-		if strings.Contains(flags, "-") {
-			w = 0
-		} else {
-			pad = paddingFlag(flags, pad)
-		}
-		var s string
-		switch {
-		case w == 0:
-			s = fmt.Sprintf("%d", c)
-		case pad == '0':
-			s = fmt.Sprintf("%0*d", w, c)
-		default:
-			s = fmt.Sprintf("%*d", w, c)
-		}
-		return applyCaseFlags(flags, conversion, s)
-	}), nil
+// Formatter is an immutable, reusable compiled strftime format. A Formatter is
+// safe for concurrent use by multiple goroutines.
+type Formatter struct {
+	parts      []formatPart
+	formatSize int
 }
 
-var re = regexp.MustCompile(`%([-_^#0]*)(\d+)?([EO]?)(:{1,3})?([a-zA-Z\+nt%])`)
+type partKind uint8
 
-type unsupportedConversion struct{}
+const (
+	literalPart partKind = iota
+	directivePart
+)
+
+type formatPart struct {
+	kind      partKind
+	literal   string
+	directive directive
+}
+
+type directive struct {
+	flags    string
+	width    int
+	hasWidth bool
+	colons   string
+	code     rune
+}
+
+// Compile parses a strftime format for repeated use. Unsupported directives
+// are retained as literal text. Compile returns an error when a supported
+// directive requests a field width large enough to risk excessive allocation.
+func Compile(format string) (*Formatter, error) {
+	formatter := &Formatter{formatSize: len(format)}
+	last := 0
+	for _, match := range directiveRE.FindAllStringSubmatchIndex(format, -1) {
+		formatter.appendLiteral(format[last:match[0]])
+		raw := format[match[0]:match[1]]
+		flags := capture(format, match[2], match[3])
+		widthText := capture(format, match[4], match[5])
+		colons := capture(format, match[8], match[9])
+		code, _ := utf8.DecodeRuneInString(format[match[10]:match[11]])
+
+		if !supportedConversion(code) || colons != "" && code != 'z' {
+			formatter.appendLiteral(raw)
+			last = match[1]
+			continue
+		}
+
+		d := directive{flags: flags, colons: colons, code: code}
+		if widthText != "" {
+			width, err := strconv.Atoi(widthText)
+			if err != nil || width > maxFieldWidth {
+				return nil, fmt.Errorf("tuesday: field width in %q exceeds %d", raw, maxFieldWidth)
+			}
+			d.width, d.hasWidth = width, true
+		}
+		formatter.parts = append(formatter.parts, formatPart{kind: directivePart, directive: d})
+		last = match[1]
+	}
+	formatter.appendLiteral(format[last:])
+	return formatter, nil
+}
+
+func capture(s string, start, end int) string {
+	if start < 0 {
+		return ""
+	}
+	return s[start:end]
+}
+
+func (f *Formatter) appendLiteral(s string) {
+	if s == "" {
+		return
+	}
+	if n := len(f.parts); n > 0 && f.parts[n-1].kind == literalPart {
+		f.parts[n-1].literal += s
+		return
+	}
+	f.parts = append(f.parts, formatPart{kind: literalPart, literal: s})
+}
+
+// Format formats t using the compiled format.
+func (f *Formatter) Format(t time.Time) string {
+	var builder strings.Builder
+	builder.Grow(f.formatSize)
+	for _, part := range f.parts {
+		if part.kind == literalPart {
+			builder.WriteString(part.literal)
+			continue
+		}
+		builder.WriteString(formatDirective(part.directive, t))
+	}
+	return builder.String()
+}
+
+// Strftime formats t according to a Ruby-compatible strftime format.
+// Unsupported directives are retained as literal text.
+func Strftime(format string, t time.Time) (string, error) {
+	formatter, err := Compile(format)
+	if err != nil {
+		return "", err
+	}
+	return formatter.Format(t), nil
+}
+
+func supportedConversion(code rune) bool {
+	switch code {
+	case 'Y', 'y', 'C', 'm', 'B', 'b', 'h', 'd', 'e', 'j',
+		'H', 'k', 'I', 'l', 'M', 'S', 'L', 'N', 'P', 'p',
+		'z', 'Z', 'A', 'a', 'u', 'w', 'G', 'g', 'V', 'U', 'W',
+		's', 'Q', 'n', 't', '%', 'c', 'D', 'x', 'F', 'v', 'r',
+		'R', 'T', 'X', '+':
+		return true
+	default:
+		return false
+	}
+}
 
 var amPmTable = map[bool]string{true: "AM", false: "PM"}
 var amPmLowerTable = map[bool]string{true: "am", false: "pm"}
 
-// Default padding character and width, by conversion rune.
-// The default default is pad='0', width=2
-var defaultPadding = map[rune]struct {
-	c rune
-	w int
-}{
-	'e': {'-', 2},
+type padding struct {
+	char  rune
+	width int
+}
+
+// The default for numeric directives not listed here is zero-padding to two characters.
+var defaultPadding = map[rune]padding{
+	'e': {' ', 2},
 	'j': {'0', 3},
-	'k': {'-', 2},
-	'l': {'-', 2},
+	'k': {' ', 2},
+	'l': {' ', 2},
 	'G': {'0', 4},
-	'Q': {'-', 0},
-	's': {'-', 0},
-	'u': {'-', 0},
-	'w': {'-', 0},
+	'Q': {'0', 0},
+	's': {'0', 0},
+	'u': {'0', 0},
+	'w': {'0', 0},
 	'Y': {'0', 4},
+}
+
+func formatDirective(d directive, t time.Time) string {
+	if d.code == 'z' {
+		return formatZone(t, d)
+	}
+	if d.code == 'L' || d.code == 'N' {
+		defaultWidth := 9
+		if d.code == 'L' {
+			defaultWidth = 3
+		}
+		return formatFraction(t.Nanosecond(), d, defaultWidth)
+	}
+
+	value := convert(t, d.code)
+	switch value.kind {
+	case textValue:
+		text := applyCaseFlags(d.flags, d.code, value.text)
+		return padString(text, d)
+	case numberValue:
+		return formatNumber(value.number, d)
+	default:
+		panic("unsupported compiled strftime directive")
+	}
+}
+
+func formatNumber(number int64, d directive) string {
+	pad, width := rune('0'), 2
+	if defaults, ok := defaultPadding[d.code]; ok {
+		pad, width = defaults.char, defaults.width
+	}
+	if d.hasWidth {
+		width = d.width
+	}
+	if strings.Contains(d.flags, "-") {
+		width = 0
+	} else {
+		pad = paddingFlag(d.flags, pad)
+	}
+
+	var result string
+	switch {
+	case width == 0:
+		result = strconv.FormatInt(number, 10)
+	case pad == '0':
+		result = fmt.Sprintf("%0*d", width, number)
+	default:
+		result = fmt.Sprintf("%*d", width, number)
+	}
+	return applyCaseFlags(d.flags, d.code, result)
 }
 
 func applyCaseFlags(flags string, conversion rune, s string) string {
@@ -128,35 +233,27 @@ func paddingFlag(flags string, defaultPad rune) rune {
 	return pad
 }
 
-func padString(s, flags, width string) string {
-	if width == "" || strings.Contains(flags, "-") {
+func padString(s string, d directive) string {
+	if !d.hasWidth || strings.Contains(d.flags, "-") || len(s) >= d.width {
 		return s
 	}
-	w, err := strconv.Atoi(width)
-	if err != nil || len(s) >= w {
-		return s
-	}
-	pad := paddingFlag(flags, ' ')
-	return strings.Repeat(string(pad), w-len(s)) + s
+	pad := paddingFlag(d.flags, ' ')
+	return strings.Repeat(string(pad), d.width-len(s)) + s
 }
 
-func formatFraction(ns int, width string, defaultWidth int) string {
-	w := defaultWidth
-	if width != "" {
-		var err error
-		w, err = strconv.Atoi(width)
-		if err != nil {
-			return ""
-		}
+func formatFraction(ns int, d directive, defaultWidth int) string {
+	width := defaultWidth
+	if d.hasWidth {
+		width = d.width
 	}
 	digits := fmt.Sprintf("%09d", ns)
-	if w <= len(digits) {
-		return digits[:w]
+	if width <= len(digits) {
+		return digits[:width]
 	}
-	return digits + strings.Repeat("0", w-len(digits))
+	return digits + strings.Repeat("0", width-len(digits))
 }
 
-func formatZone(t time.Time, flags, width, colons string) string {
+func formatZone(t time.Time, d directive) string {
 	_, offset := t.Zone()
 	sign := '+'
 	if offset < 0 {
@@ -166,7 +263,7 @@ func formatZone(t time.Time, flags, width, colons string) string {
 
 	var body string
 	defaultWidth := 5
-	switch colons {
+	switch d.colons {
 	case ":":
 		body, defaultWidth = fmt.Sprintf("%d:%02d", h, m), 6
 	case "::":
@@ -184,16 +281,12 @@ func formatZone(t time.Time, flags, width, colons string) string {
 		body = strconv.Itoa(h*100 + m)
 	}
 
-	w := defaultWidth
-	if width != "" {
-		var err error
-		w, err = strconv.Atoi(width)
-		if err != nil {
-			return ""
-		}
+	width := defaultWidth
+	if d.hasWidth {
+		width = d.width
 	}
-	pad := zonePaddingFlag(flags)
-	if n := w - 1 - len(body); n > 0 {
+	pad := zonePaddingFlag(d.flags)
+	if n := width - 1 - len(body); n > 0 {
 		if pad == '0' {
 			body = strings.Repeat("0", n) + body
 		} else {
@@ -216,132 +309,123 @@ func zonePaddingFlag(flags string) rune {
 	return pad
 }
 
-func convert(t time.Time, c rune) interface{} { // nolint: gocyclo
-	switch c {
+type valueKind uint8
 
-	// Date
+const (
+	unsupportedValue valueKind = iota
+	textValue
+	numberValue
+)
+
+type conversionValue struct {
+	kind   valueKind
+	text   string
+	number int64
+}
+
+func text(s string) conversionValue {
+	return conversionValue{kind: textValue, text: s}
+}
+
+func number(n int64) conversionValue {
+	return conversionValue{kind: numberValue, number: n}
+}
+
+func convert(t time.Time, code rune) conversionValue { // nolint: gocyclo
+	switch code {
 	case 'Y':
-		return t.Year()
+		return number(int64(t.Year()))
 	case 'y':
-		return t.Year() % 100
+		return number(int64(t.Year() % 100))
 	case 'C':
-		return t.Year() / 100
-
+		return number(int64(t.Year() / 100))
 	case 'm':
-		return t.Month()
+		return number(int64(t.Month()))
 	case 'B':
-		return t.Month().String()
+		return text(t.Month().String())
 	case 'b', 'h':
-		return t.Month().String()[:3]
-
+		return text(t.Month().String()[:3])
 	case 'd', 'e':
-		return t.Day()
-
+		return number(int64(t.Day()))
 	case 'j':
-		return t.YearDay()
-
-	// Time
+		return number(int64(t.YearDay()))
 	case 'H', 'k':
-		return t.Hour()
+		return number(int64(t.Hour()))
 	case 'I', 'l':
-		return (t.Hour()+11)%12 + 1
+		return number(int64((t.Hour()+11)%12 + 1))
 	case 'M':
-		return t.Minute()
+		return number(int64(t.Minute()))
 	case 'S':
-		return t.Second()
+		return number(int64(t.Second()))
 	case 'P':
-		return amPmLowerTable[t.Hour() < 12]
+		return text(amPmLowerTable[t.Hour() < 12])
 	case 'p':
-		return amPmTable[t.Hour() < 12]
-
-	// Time zone
+		return text(amPmTable[t.Hour() < 12])
 	case 'Z':
-		z, _ := t.Zone()
-		return z
-
-	// Weekday
+		zone, _ := t.Zone()
+		return text(zone)
 	case 'A':
-		return t.Weekday().String()
+		return text(t.Weekday().String())
 	case 'a':
-		return t.Weekday().String()[:3]
+		return text(t.Weekday().String()[:3])
 	case 'u':
-		return (t.Weekday()+6)%7 + 1
+		return number(int64((t.Weekday()+6)%7 + 1))
 	case 'w':
-		return t.Weekday()
-
-	// ISO week and year
+		return number(int64(t.Weekday()))
 	case 'G':
-		y, _ := t.ISOWeek()
-		return y
+		year, _ := t.ISOWeek()
+		return number(int64(year))
 	case 'g':
-		y, _ := t.ISOWeek()
-		return y % 100
+		year, _ := t.ISOWeek()
+		return number(int64(year % 100))
 	case 'V':
-		_, wn := t.ISOWeek()
-		return wn
-
-	// Ruby week
+		_, week := t.ISOWeek()
+		return number(int64(week))
 	case 'U':
-		// day of year of first day of week (might be negative)
-		d := t.YearDay() - int(t.Weekday())
-		return (d + 6) / 7
+		day := t.YearDay() - int(t.Weekday())
+		return number(int64((day + 6) / 7))
 	case 'W':
-		// day of year of first day of (Monday-based) week
-		d := t.YearDay() - int(t.Weekday()) + 1
+		day := t.YearDay() - int(t.Weekday()) + 1
 		if t.Weekday() == time.Sunday {
-			d -= 7
+			day -= 7
 		}
-		return (d + 6) / 7
-
-	// Epoch time
+		return number(int64((day + 6) / 7))
 	case 's':
-		return t.Unix()
+		return number(t.Unix())
 	case 'Q':
-		// Milliseconds since epoch (Ruby DateTime#strftime)
-		return t.UnixMilli()
-
-	// Literals
+		return number(t.UnixMilli())
 	case 'n':
-		return "\n"
+		return text("\n")
 	case 't':
-		return "\t"
+		return text("\t")
 	case '%':
-		return "%"
-
-	// Combinations
+		return text("%")
 	case 'c':
-		// date and time (%a %b %e %T %Y)
-		h, m, s := t.Clock()
-		return fmt.Sprintf("%s %s %2d %02d:%02d:%02d %04d", t.Weekday().String()[:3], t.Month().String()[:3], t.Day(), h, m, s, t.Year())
+		hour, minute, second := t.Clock()
+		return text(fmt.Sprintf("%s %s %2d %02d:%02d:%02d %04d", t.Weekday().String()[:3], t.Month().String()[:3], t.Day(), hour, minute, second, t.Year()))
 	case 'D', 'x':
-		// Date (%m/%d/%y)
-		y, m, d := t.Date()
-		return fmt.Sprintf("%02d/%02d/%02d", m, d, y%100)
+		year, month, day := t.Date()
+		return text(fmt.Sprintf("%02d/%02d/%02d", month, day, year%100))
 	case 'F':
-		// The ISO 8601 date format (%Y-%m-%d)
-		y, m, d := t.Date()
-		return fmt.Sprintf("%04d-%02d-%02d", y, m, d)
+		year, month, day := t.Date()
+		return text(fmt.Sprintf("%04d-%02d-%02d", year, month, day))
 	case 'v':
-		// VMS date (%e-%^b-%4Y)
-		return fmt.Sprintf("%2d-%s-%04d", t.Day(), strings.ToUpper(t.Month().String()[:3]), t.Year())
+		return text(fmt.Sprintf("%2d-%s-%04d", t.Day(), strings.ToUpper(t.Month().String()[:3]), t.Year()))
 	case 'r':
-		// 12-hour time (%I:%M:%S %p)
-		h, m, s := t.Clock()
-		h12 := (h+11)%12 + 1
-		return fmt.Sprintf("%02d:%02d:%02d %s", h12, m, s, amPmTable[h < 12])
+		hour, minute, second := t.Clock()
+		hour12 := (hour+11)%12 + 1
+		return text(fmt.Sprintf("%02d:%02d:%02d %s", hour12, minute, second, amPmTable[hour < 12]))
 	case 'R':
-		// 24-hour time (%H:%M)
-		h, m, _ := t.Clock()
-		return fmt.Sprintf("%02d:%02d", h, m)
+		hour, minute, _ := t.Clock()
+		return text(fmt.Sprintf("%02d:%02d", hour, minute))
 	case 'T', 'X':
-		// 24-hour time (%H:%M:%S)
-		h, m, s := t.Clock()
-		return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
+		hour, minute, second := t.Clock()
+		return text(fmt.Sprintf("%02d:%02d:%02d", hour, minute, second))
 	case '+':
-		// date(1) (%a %b %e %H:%M:%S %Z %Y)
-		s, _ := Strftime("%a %b %e %H:%M:%S %Z %Y", t) // nolint: gas
-		return s
+		hour, minute, second := t.Clock()
+		zone, _ := t.Zone()
+		return text(fmt.Sprintf("%s %s %2d %02d:%02d:%02d %s %04d", t.Weekday().String()[:3], t.Month().String()[:3], t.Day(), hour, minute, second, zone, t.Year()))
 	default:
-		return unsupportedConversion{}
+		return conversionValue{kind: unsupportedValue}
 	}
 }

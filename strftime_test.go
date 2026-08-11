@@ -263,6 +263,32 @@ func TestStrftime_epochConversions(t *testing.T) {
 	}
 }
 
+func TestFormatter(t *testing.T) {
+	formatter, err := Compile("%Y-%m-%d %H:%M:%S %:z")
+	require.NoError(t, err)
+
+	times := []time.Time{
+		time.Date(2006, 1, 2, 15, 4, 5, 0, time.FixedZone("EST", -5*60*60)),
+		time.Date(2026, 8, 11, 9, 30, 0, 0, time.UTC),
+	}
+	expect := []string{
+		"2006-01-02 15:04:05 -05:00",
+		"2026-08-11 09:30:00 +00:00",
+	}
+	for i, dt := range times {
+		require.Equal(t, expect[i], formatter.Format(dt))
+	}
+}
+
+func TestCompile_rejectsExcessiveWidth(t *testing.T) {
+	_, err := Compile("%1048577Y")
+	require.Error(t, err)
+
+	formatter, err := Compile("%999999999999999999J")
+	require.NoError(t, err)
+	require.Equal(t, "%999999999999999999J", formatter.Format(time.Time{}))
+}
+
 func ExampleStrftime_flags() {
 	t, _ := time.Parse(time.RFC822, "10 Jul 17 18:45 EDT")
 	s, _ := Strftime("%B %^B %m %_m %-m %6Y", t)
