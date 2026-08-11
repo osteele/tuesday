@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.1.0] - 2026-08-11
+
 ### Added
 
 - Add reusable, concurrency-safe compiled formatters through `Compile` and
@@ -72,7 +74,8 @@ Initial release. Ruby-compatible `strftime` for Go, supporting:
 - Padding flags (`-`, `_`, `0`), case flags (`^`, `#`), and field widths
 - Ruby-specific conversions: `%s`, `%N`, `%L`, `%:z`, `%::z`
 
-[Unreleased]: https://github.com/osteele/tuesday/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/osteele/tuesday/compare/v1.1.0...HEAD
+[v1.1.0]: https://github.com/osteele/tuesday/compare/v1.0.4...v1.1.0
 [v1.0.4]: https://github.com/osteele/tuesday/compare/v1.0.3...v1.0.4
 [v1.0.3]: https://github.com/osteele/tuesday/compare/v1.0.2...v1.0.3
 [v1.0.2]: https://github.com/osteele/tuesday/compare/v1.0.1...v1.0.2
