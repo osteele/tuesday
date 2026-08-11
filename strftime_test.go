@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/require"
 )
 
 // fills in the gaps from gen.rb
@@ -96,8 +94,8 @@ func TestStrftime(t *testing.T) {
 	for _, test := range conversionTests {
 		name := fmt.Sprintf("Strftime %q", test.format)
 		actual, err := Strftime(test.format, dt)
-		require.NoErrorf(t, err, name)
-		require.Equalf(t, test.expect, actual, name)
+		checkNoError(t, err)
+		checkEqual(t, test.expect, actual, name)
 	}
 
 	tests, err := readConversionTests()
@@ -108,8 +106,8 @@ func TestStrftime(t *testing.T) {
 		format, expect := row[0], row[1]
 		name := fmt.Sprintf("Strftime %q", format)
 		actual, err := Strftime(format, dt)
-		require.NoErrorf(t, err, name)
-		require.Equalf(t, expect, actual, name)
+		checkNoError(t, err)
+		checkEqual(t, expect, actual, name)
 	}
 }
 
@@ -226,16 +224,16 @@ func TestStrftime_RubyCompatibilityEdges(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.format, func(t *testing.T) {
 			actual, err := Strftime(test.format, dt)
-			require.NoError(t, err)
-			require.Equal(t, test.expect, actual)
+			checkNoError(t, err)
+			checkEqual(t, test.expect, actual, test.format)
 		})
 	}
 
 	smallNS := time.Date(2006, 1, 2, 15, 4, 5, 1, time.UTC)
 	for _, format := range []string{"%-N", "%_N"} {
 		actual, err := Strftime(format, smallNS)
-		require.NoError(t, err)
-		require.Equal(t, "000000001", actual)
+		checkNoError(t, err)
+		checkEqual(t, "000000001", actual, format)
 	}
 }
 
@@ -257,15 +255,15 @@ func TestStrftime_epochConversions(t *testing.T) {
 		name := fmt.Sprintf("%s_%s", test.time.Format(time.RFC3339Nano), test.format)
 		t.Run(name, func(t *testing.T) {
 			actual, err := Strftime(test.format, test.time)
-			require.NoError(t, err)
-			require.Equal(t, test.expect, actual)
+			checkNoError(t, err)
+			checkEqual(t, test.expect, actual, test.format)
 		})
 	}
 }
 
 func TestFormatter(t *testing.T) {
 	formatter, err := Compile("%Y-%m-%d %H:%M:%S %:z")
-	require.NoError(t, err)
+	checkNoError(t, err)
 
 	times := []time.Time{
 		time.Date(2006, 1, 2, 15, 4, 5, 0, time.FixedZone("EST", -5*60*60)),
@@ -276,17 +274,19 @@ func TestFormatter(t *testing.T) {
 		"2026-08-11 09:30:00 +00:00",
 	}
 	for i, dt := range times {
-		require.Equal(t, expect[i], formatter.Format(dt))
+		checkEqual(t, expect[i], formatter.Format(dt), dt.String())
 	}
 }
 
 func TestCompile_rejectsExcessiveWidth(t *testing.T) {
 	_, err := Compile("%1048577Y")
-	require.Error(t, err)
+	if err == nil {
+		t.Fatal("Compile accepted an excessive field width")
+	}
 
 	formatter, err := Compile("%999999999999999999J")
-	require.NoError(t, err)
-	require.Equal(t, "%999999999999999999J", formatter.Format(time.Time{}))
+	checkNoError(t, err)
+	checkEqual(t, "%999999999999999999J", formatter.Format(time.Time{}), "unsupported directive")
 }
 
 func ExampleStrftime_flags() {
@@ -342,9 +342,23 @@ func testDirectives(t *testing.T, label interface{}, dt time.Time, directives st
 		format, expect := m[1], m[2]
 		t.Run(fmt.Sprintf("%v.Strftime(%q)", label, format), func(t *testing.T) {
 			actual, err := Strftime(format, dt)
-			require.NoError(t, err)
-			require.Equal(t, expect, actual)
+			checkNoError(t, err)
+			checkEqual(t, expect, actual, format)
 		})
+	}
+}
+
+func checkNoError(t testing.TB, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func checkEqual(t testing.TB, expect, actual, label string) {
+	t.Helper()
+	if actual != expect {
+		t.Fatalf("%s: got %q, want %q", label, actual, expect)
 	}
 }
 
