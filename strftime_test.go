@@ -201,6 +201,53 @@ func TestStrftime_zones(t *testing.T) {
 	}
 }
 
+func TestStrftime_zoneMinimumWidths(t *testing.T) {
+	// Ruby enforces a minimum width for timezone output even when a smaller
+	// width is requested.
+	dt := time.Date(2006, 1, 2, 15, 4, 5, 0, time.FixedZone("EST", -5*60*60))
+	tests := []struct{ format, expect string }{
+		{"%1z", "-0500"},
+		{"%2z", "-0500"},
+		{"%3z", "-0500"},
+		{"%4z", "-0500"},
+		{"%5z", "-0500"},
+		{"%_1z", " -500"},
+		{"%_2z", " -500"},
+		{"%_3z", " -500"},
+		{"%_4z", " -500"},
+		{"%_5z", " -500"},
+		{"%1:z", "-05:00"},
+		{"%2:z", "-05:00"},
+		{"%3:z", "-05:00"},
+		{"%4:z", "-05:00"},
+		{"%5:z", "-05:00"},
+		{"%6:z", "-05:00"},
+		{"%_1:z", " -5:00"},
+		{"%_2:z", " -5:00"},
+		{"%_3:z", " -5:00"},
+		{"%_4:z", " -5:00"},
+		{"%_5:z", " -5:00"},
+		{"%_6:z", " -5:00"},
+		{"%1::z", "-05:00:00"},
+		{"%5::z", "-05:00:00"},
+		{"%9::z", "-05:00:00"},
+		{"%_1::z", " -5:00:00"},
+		{"%_9::z", " -5:00:00"},
+		{"%1:::z", "-05"},
+		{"%2:::z", "-05"},
+		{"%3:::z", "-05"},
+		{"%_1:::z", " -5"},
+		{"%_3:::z", " -5"},
+	}
+	for _, test := range tests {
+		t.Run(test.format, func(t *testing.T) {
+			actual, err := Strftime(test.format, dt)
+			checkNoError(t, err)
+			checkEqual(t, test.expect, actual, test.format)
+		})
+	}
+}
+
 func TestStrftime_RubyCompatibilityEdges(t *testing.T) {
 	dt := time.Date(2006, 1, 2, 15, 4, 5, 123456789, time.FixedZone("EST", -5*60*60))
 	tests := []struct{ format, expect string }{
@@ -282,6 +329,11 @@ func TestCompile_rejectsExcessiveWidth(t *testing.T) {
 	_, err := Compile("%1048577Y")
 	if err == nil {
 		t.Fatal("Compile accepted an excessive field width")
+	}
+
+	_, err = Strftime("%1048577Y", time.Date(2006, 1, 2, 0, 0, 0, 0, time.UTC))
+	if err == nil {
+		t.Fatal("Strftime accepted an excessive field width")
 	}
 
 	formatter, err := Compile("%999999999999999999J")

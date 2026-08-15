@@ -283,7 +283,7 @@ func formatZone(t time.Time, d directive) string {
 	}
 
 	width := defaultWidth
-	if d.hasWidth {
+	if d.hasWidth && d.width > defaultWidth {
 		width = d.width
 	}
 	pad := zonePaddingFlag(d.flags)

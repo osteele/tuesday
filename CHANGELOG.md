@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+## [v1.1.1] - 2026-08-15
+
+### Fixed
+
+- Enforce Ruby-compatible minimum widths for timezone output (`%z`, `%:z`,
+  `%::z`, `%:::z`). Previously a requested width smaller than the default
+  (e.g. `%1z`) was honored literally, producing `-500` instead of Ruby's
+  `-0500`.
+
+### Added
+
+- Add `TestStrftime_zoneMinimumWidths` and coverage for the `Strftime` error
+  path on excessive field widths.
+- Add `testdata/ruby_behavior_report.rb` and `testdata/compare_report.go` for
+  comparing Tuesday against the strftime behavior of a specific Ruby runtime.
+
+### Changed
+
+- Document `%+` as a Tuesday extension; Ruby `Time#strftime` does not implement
+  `%+`, while Ruby `DateTime` prints the UTC offset rather than the location
+  name.
+
 ## [v1.1.0] - 2026-08-11
 
 ### Added
@@ -74,7 +96,8 @@ Initial release. Ruby-compatible `strftime` for Go, supporting:
 - Padding flags (`-`, `_`, `0`), case flags (`^`, `#`), and field widths
 - Ruby-specific conversions: `%s`, `%N`, `%L`, `%:z`, `%::z`
 
-[Unreleased]: https://github.com/osteele/tuesday/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/osteele/tuesday/compare/v1.1.1...HEAD
+[v1.1.1]: https://github.com/osteele/tuesday/compare/v1.1.0...v1.1.1
 [v1.1.0]: https://github.com/osteele/tuesday/compare/v1.0.4...v1.1.0
 [v1.0.4]: https://github.com/osteele/tuesday/compare/v1.0.3...v1.0.4
 [v1.0.3]: https://github.com/osteele/tuesday/compare/v1.0.2...v1.0.3

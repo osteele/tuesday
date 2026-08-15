@@ -64,7 +64,9 @@ formatted := formatter.Format(value)
 Tuesday targets the formatting behavior of Ruby 3.4
 [`Time#strftime`](https://docs.ruby-lang.org/en/3.4/Time.html). Its differential
 test matrix also uses `DateTime#strftime` for `%Q`, which Ruby `Time` does not
-implement.
+implement. Tuesday additionally supports `%+` as an extension; Ruby `Time`
+does not implement `%+`, while Ruby `DateTime` prints the UTC offset rather
+than the location name.
 
 - Month and weekday names use Go's English names, corresponding to Ruby's C
   locale. Locale-specific names are not supported; `E` and `O` modifiers use
