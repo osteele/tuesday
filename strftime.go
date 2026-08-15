@@ -1,7 +1,7 @@
 // Package tuesday implements strftime formatting compatible with Ruby 3.4.
 package tuesday
 
-//go:generate ruby testdata/gen.rb
+//go:generate ruby scripts/generate_test_data.rb
 
 import (
 	"fmt"

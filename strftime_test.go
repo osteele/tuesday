@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// fills in the gaps from gen.rb
+// fills in the gaps from scripts/generate_test_data.rb
 var conversionTests = []struct{ format, expect string }{
 	// prefix and suffix
 	{"pre%m", "pre01"},

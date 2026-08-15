@@ -14,7 +14,7 @@ func TestRubyConformance(t *testing.T) {
 		t.Skip("Ruby is not installed")
 	}
 
-	output, err := exec.Command(ruby, "testdata/conformance.rb").Output()
+	output, err := exec.Command(ruby, "scripts/generate_conformance_matrix.rb").Output()
 	if err != nil {
 		t.Fatalf("generate Ruby conformance matrix: %v", err)
 	}

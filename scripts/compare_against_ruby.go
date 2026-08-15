@@ -1,10 +1,10 @@
 //go:build ignore
 // +build ignore
 
-// compare_report.go reads a ruby_behavior_report.json file and compares each
-// reported strftime result against tuesday.Strftime. Run it as:
+// compare_against_ruby.go reads a ruby_behavior_report.json file and compares
+// each reported strftime result against tuesday.Strftime. Run it as:
 //
-//	go run testdata/compare_report.go < ruby_report.json
+//	go run scripts/compare_against_ruby.go < ruby_report.json
 package main
 
 import (

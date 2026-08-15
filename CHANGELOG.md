@@ -15,8 +15,9 @@
 
 - Add `TestStrftime_zoneMinimumWidths` and coverage for the `Strftime` error
   path on excessive field widths.
-- Add `testdata/ruby_behavior_report.rb` and `testdata/compare_report.go` for
-  comparing Tuesday against the strftime behavior of a specific Ruby runtime.
+- Add `scripts/report_ruby_behavior.rb` and `scripts/compare_against_ruby.go`
+  for comparing Tuesday against the strftime behavior of a specific Ruby
+  runtime.
 
 ### Changed
 
